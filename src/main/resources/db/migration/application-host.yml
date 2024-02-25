@@ -1,0 +1,81 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://${DB_HOST}:${DB_PORT}/${DB_NAME}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+  output:
+    ansi:
+      enabled: always
+  flyway:
+    baseline-on-migrate: true
+    enabled: true
+    user: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+    baseline-version: 0
+    baseline-description: "db_init"
+task:
+  hub:
+    secret:
+      key: ${SECRET_KEY}
+sendinblue:
+  mail:
+    api_key: ${API_KEY}
+    url: ${MAIL_URL}
+  sms:
+    url: ${SMS_URL}
+cloudinary:
+  cloud:
+    name: ${CLOUDINARY_NAME}
+  api:
+    secret: ${CLOUDINARY_SECRET}
+    key: ${CLOUDINARY_KEY}
+app:
+  name: ${APP_NAME}
+  email: ${APP_EMAIL}
+access_expiration: ${ACCESS_EXPIRATION}
+refresh_expiration: ${REFRESH_EXPIRATION}
+stripe:
+  api:
+    secretKey: ${SECRET.KEY}
+    publicKey: ${PUBLISH.KEY}
+paypal:
+  mode: ${MODE}
+  client:
+    id: ${ID}
+    secret: ${SECRET}
+success:
+  url: ${SUCCESS}
+cancel:
+  url: ${CANCEL}
+frontend_url: ${FRONTEND_URL}
+charges: ${CHARGES}
+#SWAGGER CONFIGURATION
+springdoc:
+  api-docs:
+    enabled: true  # Enable or disable the generation of OpenAPI documentation
+  swagger-ui:
+    path: /swagger-ui.html  # Path to access Swagger UI
+    filter: true  # Enable filtering in Swagger UI
+    tagsSorter: alpha  # Sort tags alphabetically
+    operationsSorter: alpha  # Sort API operations alphabetically
+    doc-expansion: none  # Controls how the API listing is displayed (none, list, full)
+    deep-linking: true  # Enable or disable deep linking for tags and operations
+    display-request-duration: true  # Display the request duration in Swagger UI
+    default-model-rendering: example  # Controls how the model is displayed in Swagger UI (example, model)
+    default-model-expand-depth: 1  # Default model expansion depth
+    show-extensions: true  # Show extensions in the Swagger UI
+    url: /v3/api-docs  # URL of the OpenAPI documentation (used when Swagger UI is served from a different server)
+    display-operation-id: true
+    default-model-tab-index: 1  # Default model tab index
+    show-request-body: always  # Controls when to show the request body (always, never, with_input)
+    show-mutated-request: false  # Show the mutated request instead of the original one
+    show-common-errors: true  # Show common HTTP errors in the response
+    display-query-params-without-oauth2: true  # Display query parameters even if OAuth2 is used

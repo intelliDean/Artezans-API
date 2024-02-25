@@ -1,0 +1,86 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:task}
+    username: postgres
+    password: "@Tiptop2059!"
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+  output:
+    ansi:
+      enabled: always
+  flyway:
+    baseline-on-migrate: true
+    enabled: true
+    user: postgres
+    password: "@Tiptop2059!"
+    baseline-version: 0
+    baseline-description: "db_init"
+#  profiles:
+#    active: prod
+task:
+  hub:
+    secret:
+      key: ${SECRET_KEY:OIDCu9SZ9U5LGqF6mW12KxLuSxO70GPfqw3W2fh4uciXEi17bxij7229eNsVXRZnpsOa7pMb8gGbfJdl8YmnZ5uuaA43RPRH1v8720TWYUwAST90hzdLdzVYh54WXm44}
+sendinblue:
+  mail:
+    api_key: ${API_KEY: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}
+    url: ${MAIL_URL:https://api.brevo.com/v3/smtp/email}
+  sms:
+    url: ${SMS_URL:https://api.brevo.com/v3/transactionalSMS/sms}
+cloudinary:
+  cloud:
+    name: ${CLOUDINARY_NAME:ddgm9zdnr}
+  api:
+    secret: ${CLOUDINARY_SECRET:IGsVcz3MwMDrUmd-kyahxGL-x1Y}
+    key: ${CLOUDINARY_KEY:249119262672761}
+app:
+  name: ${APP_NAME:Task Hub}
+  email: ${APP_EMAIL:info@taskhub.com}
+access_expiration: ${ACCESS_EXPIRATION:3}
+refresh_expiration: ${REFRESH_EXPIRATION:168}
+stripe:
+  api:
+    secretKey: ${SECRET.KEY:sk_test_51NwA5rBX3MgejENsLRQ8qo28vZLYZ1ZQnFsTAYqR1aEccqcpFLlPJgyhHwqxFqEnb2rpqmP4SGxtckiWq1L8H8DH00z1iGQ6hD}
+    publicKey: ${PUBLISH.KEY:pk_test_51NwA5rBX3MgejENsZf68MMf7IPbFLQN2325qSwC78cWISyTINIrSG5MNqPxXPRvwTyjrdDkGofpmNlATQvI3E14z00nuonWYmK}
+paypal:
+  mode: ${MODE:sandbox}
+  client:
+    id: ${ID:AQSPm1YrMI6kxbSkF7JHvEp44o1iy9BPi8-OU_sr19az1iAHFgHfwcPYy5DACBw-V6stgTzsA4xTRk4M}
+    secret: ${SECRET:EKTcXv10hOz6LI4vazNPgyFwXDPeqM7zv_T5qeVkpg9u1EC1DCqyLvj0WT0JWIdLy2k8ePRQZqnJleV3}
+success:
+  url: ${SUCCESS:https://service-rppp.onrender.com/api/v1/paypal/success}
+cancel:
+  url: ${CANCEL:https://service-rppp.onrender.com/api/v1/paypal/cancel}
+frontend_url: ${FRONTEND_URL:https://taskhub-six.vercel.app}
+charges: ${CHARGES:0.15}
+oauth2:
+  redirect:
+    uri: ${OAUTH2.REDIRECT.URI:http://localhost:8080/login/oauth2/code/*}
+#SWAGGER CONFIGURATION
+springdoc:
+  api-docs:
+    enabled: true  # Enable or disable the generation of OpenAPI documentation
+  swagger-ui:
+    path: /swagger-ui.html  # Path to access Swagger UI
+    filter: true  # Enable filtering in Swagger UI
+    tagsSorter: alpha  # Sort tags alphabetically
+    operationsSorter: alpha  # Sort API operations alphabetically
+    doc-expansion: none  # Controls how the API listing is displayed (none, list, full)
+    deep-linking: true  # Enable or disable deep linking for tags and operations
+    display-request-duration: true  # Display the request duration in Swagger UI
+    default-model-rendering: example  # Controls how the model is displayed in Swagger UI (example, model)
+    default-model-expand-depth: 1  # Default model expansion depth
+    show-extensions: true  # Show extensions in the Swagger UI
+    url: /v3/api-docs  # URL of the OpenAPI documentation (used when Swagger UI is served from a different server)
+    display-operation-id: true
+    default-model-tab-index: 1  # Default model tab index
+    show-request-body: always  # Controls when to show the request body (always, never, with_input)
+    show-mutated-request: false  # Show the mutated request instead of the original one
+    show-common-errors: true  # Show common HTTP errors in the response
+    display-query-params-without-oauth2: true  # Display query parameters even if OAuth2 is used

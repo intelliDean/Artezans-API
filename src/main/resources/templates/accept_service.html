@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Accept Task</title>
+     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins&display=swap');
+
+        * {
+            margin: 0;
+            padding: 0;
+            font-family: 'Poppins', sans-serif;
+        }
+
+         .name {
+            max-width: 500px;
+            margin: auto;
+            font-size: 17px;
+            font-weight: bold
+        }
+        .wrapper {
+            max-width: 500px;
+            margin: auto;
+            padding: 30px 20px;
+            background-color: white;
+            box-shadow: /* Bottom shadow / 0px 1px 0px black, / Left shadow / -1px 0px 0px black, / Right shadow / 1px 0px 0px black, / No top shadow */ 0px 0px 0px 0px;
+        }
+
+        /* header  */
+        .header {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .header img {
+            width: 30px;
+        }
+
+        .header h2 {
+            font-size: 17px;
+        }
+
+        /* first row */
+        .row1 {
+            margin: 30px 0 20px;
+            font-size: 15px;
+            text-align: justify;
+        }
+
+        .row1 .welcome {
+            margin: 15px 0;
+        }
+
+        /* button  */
+        .wrapper .btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+        }
+
+        .wrapper .btn a {
+            padding: 15px 30px;
+            border-radius: 5px;
+            outline: none;
+            border: none;
+            background-color: #381F8C;
+            text-decoration: none;
+            color: white;
+
+        }
+
+        .wrapper .btn a:hover {
+            background-color: #25155D;
+        }
+
+
+        .wrapper .btn h3 {
+            margin: 15px 0;
+        }
+
+        .wrapper .alt-link p {
+            margin-top: 20px;
+        }
+
+        /* regards  */
+        .wrapper .regards {
+            margin-top: 25px;
+        }
+
+        .footer {
+            background-color: #f2f2f2;
+            padding: 10px 0;
+            align-content: center;
+            text-align: center;
+            margin-top: 450px;
+            border-radius: 10px;
+            color: #666;
+        }
+
+         /*Mobile styles */
+        @media screen and (max-width: 600px) {
+            .container {
+                padding: 10px;
+                height: 100vh;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="wrapper">
+    <div class="header">
+        <a href="https://taskhub.com" target="_blank">
+            <img src="./logo.png" alt="Taskhub Logo">
+        </a>
+        <h2>TaskHUB</h2>
+    </div>
+    <div class="row1">
+        <p class="dear"><b>Dear <span th:text="${firstName}"/></b>,</p>
+
+        <p class="welcome">I am writing to inform you that <span th:text="${customerName}"></span> has accepted the <span
+        th:text="${serviceName}"></span> service render to them.</p>
+
+        <p>Please generate invoice for this service rendered so your payment could be processed.</p><br>
+        <p>Thank you for your service.</p>
+    </div>
+    <div class="regards">
+        <p>Best Regards,</p>
+        <p><b>TaskHUB Management</b></p>
+    </div>
+    <div class="footer">
+        <p>
+            TaskHUB &copy; 2023. All rights reserved.
+        </p>
+    </div>
+</div>
+</body>
+</html>

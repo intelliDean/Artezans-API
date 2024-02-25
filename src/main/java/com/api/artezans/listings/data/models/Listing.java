@@ -1,11 +1,11 @@
 package com.api.artezans.listings.data.models;
 
+import com.api.artezans.listings.data.enums.AvailableDays;
+import com.api.artezans.provider.data.model.ServiceProvider;
+import com.api.artezans.users.models.Address;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
-import task.hub.user.listings.data.enums.AvailableDays;
-import task.hub.user.service.provider.data.model.ServiceProvider;
-import task.hub.user.users.models.Address;
 
 import java.math.BigDecimal;
 import java.time.LocalTime;

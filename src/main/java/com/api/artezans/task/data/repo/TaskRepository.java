@@ -1,9 +1,9 @@
 package com.api.artezans.task.data.repo;
 
+import com.api.artezans.task.data.model.Task;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
-import task.hub.user.task.data.model.Task;
 
 import java.util.List;
 @Repository

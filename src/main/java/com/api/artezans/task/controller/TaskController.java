@@ -1,11 +1,11 @@
 package com.api.artezans.task.controller;
 
+import com.api.artezans.task.data.dto.TaskRequest;
+import com.api.artezans.task.data.model.Task;
+import com.api.artezans.task.service.TaskService;
+import com.api.artezans.utils.ApiResponse;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Component;
-import task.hub.user.task.data.dto.TaskRequest;
-import task.hub.user.task.data.model.Task;
-import task.hub.user.task.service.TaskService;
-import task.hub.user.utils.ApiResponse;
 
 import java.util.List;
 

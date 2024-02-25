@@ -2,6 +2,7 @@ package com.api.artezans.gateway.authentication;
 
 import com.api.artezans.authentication.dtos.AuthRequest;
 import com.api.artezans.authentication.dtos.AuthResponse;
+import com.api.artezans.authentication.services.AuthService;
 import com.api.artezans.exceptions.TaskHubException;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -24,7 +25,9 @@ import static com.api.artezans.gateway.authentication.AuthUtil.*;
 @Tag(name = "Auth Controller")
 @RequestMapping("api/v1/auth")
 public class AuthenticationGateway {
-    private final AuthenticationService authenticationService;
+
+   private final AuthService authenticationService;
+
 
     @PostMapping("login")
     @Operation(summary = LOGIN_SUMMARY, description = LOGIN_DESCRIPTION, operationId = LOGIN_OP_ID)

@@ -1,9 +1,9 @@
 package com.api.artezans.task.service;
 
+import com.api.artezans.task.data.model.Task;
+import com.api.artezans.task.data.repo.TaskRepository;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
-import task.hub.user.task.data.model.Task;
-import task.hub.user.task.data.repo.TaskRepository;
 
 import java.util.ArrayList;
 import java.util.List;

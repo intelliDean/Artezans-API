@@ -20,6 +20,7 @@ import com.api.artezans.notifications.mail.dto.MailInfo;
 import com.api.artezans.payment.paypal.PaypalService;
 import com.api.artezans.payment.paypal.dto.OrderDetail;
 import com.api.artezans.payment.stripe.dto.PaymentIntentRequest;
+import com.api.artezans.payment.stripe.dto.Response;
 import com.api.artezans.payment.stripe.services.StripeService;
 import com.api.artezans.users.models.User;
 import com.api.artezans.utils.ApiResponse;

@@ -1,14 +1,14 @@
 package com.api.artezans.provider.service;
 
+import com.api.artezans.notifications.app_notification.model.AppNotification;
+import com.api.artezans.provider.data.dto.ServiceProviderRegistrationRequest;
+import com.api.artezans.provider.data.dto.ServiceProviderUpdateRequest;
+import com.api.artezans.provider.data.model.ServiceProvider;
+import com.api.artezans.task.data.model.Task;
+import com.api.artezans.utils.ApiResponse;
 import com.github.fge.jsonpatch.JsonPatch;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.web.multipart.MultipartFile;
-import task.hub.user.app_notification.model.AppNotification;
-import task.hub.user.service.provider.data.dto.ServiceProviderRegistrationRequest;
-import task.hub.user.service.provider.data.dto.ServiceProviderUpdateRequest;
-import task.hub.user.service.provider.data.model.ServiceProvider;
-import task.hub.user.task.data.model.Task;
-import task.hub.user.utils.ApiResponse;
 
 import java.util.List;
 

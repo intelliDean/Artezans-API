@@ -1,14 +1,14 @@
 package com.api.artezans.tokens.service;
 
 
+import com.api.artezans.exceptions.TaskHubException;
+import com.api.artezans.tokens.model.TaskHubVerificationToken;
+import com.api.artezans.tokens.repository.TaskHubVerificationTokenRepository;
+import com.api.artezans.tokens.service.interfaces.TaskHubVerificationTokenService;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
-import task.hub.exceptions.TaskHubException;
-import task.hub.user.tokens.model.TaskHubVerificationToken;
-import task.hub.user.tokens.repository.TaskHubVerificationTokenRepository;
-import task.hub.user.tokens.service.interfaces.TaskHubVerificationTokenService;
 
 import java.time.LocalDateTime;
 import java.util.List;

@@ -27,13 +27,6 @@ public class ServiceProviderController {
         return serviceProviderService.register(request, httpRequest);
     }
 
-//    public AuthResponse authenticateAndGetToken(AuthRequest authRequest) {
-//        if (serviceProviderService.isExist(authRequest.getEmailAddress())) {
-//            return serviceProviderService.authenticateAndGetToken(authRequest);
-//        }
-//        throw new UserNotAuthorizedException();
-//    }
-
     public ApiResponse completeServiceProviderRegistration(
             String token, ServiceProviderUpdateRequest updateRequest) {
         return serviceProviderService.completeServiceProviderRegistration(token, updateRequest);

@@ -1,11 +1,11 @@
 package com.api.artezans.tokens.service;
 
+import com.api.artezans.tokens.model.TaskHubToken;
+import com.api.artezans.tokens.repository.TaskHubTokenRepository;
+import com.api.artezans.tokens.service.interfaces.TaskHubTokenService;
 import lombok.AllArgsConstructor;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
-import task.hub.user.tokens.model.TaskHubToken;
-import task.hub.user.tokens.repository.TaskHubTokenRepository;
-import task.hub.user.tokens.service.interfaces.TaskHubTokenService;
 
 import java.util.List;
 import java.util.Optional;

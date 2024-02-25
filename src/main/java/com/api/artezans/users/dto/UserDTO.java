@@ -1,5 +1,10 @@
 package com.api.artezans.users.dto;
 
+import com.api.artezans.notifications.app_notification.model.AppNotification;
+import com.api.artezans.users.models.Address;
+import com.api.artezans.users.models.User;
+import com.api.artezans.users.models.enums.AccountState;
+import com.api.artezans.users.models.enums.Role;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.NoArgsConstructor;

@@ -1,15 +1,15 @@
 package com.api.artezans.listings.controller;
 
+import com.api.artezans.listings.data.dtos.ListingRequest;
+import com.api.artezans.listings.data.dtos.LocationFilter;
+import com.api.artezans.listings.data.models.Listing;
+import com.api.artezans.listings.services.ListingService;
+import com.api.artezans.utils.ApiResponse;
+import com.api.artezans.utils.Paginate;
 import com.github.fge.jsonpatch.JsonPatch;
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Component;
-import task.hub.user.listings.data.dtos.ListingRequest;
-import task.hub.user.listings.data.dtos.LocationFilter;
-import task.hub.user.listings.data.models.Listing;
-import task.hub.user.listings.services.ListingService;
-import task.hub.user.utils.ApiResponse;
-import task.hub.user.utils.Paginate;
 
 import java.util.List;
 

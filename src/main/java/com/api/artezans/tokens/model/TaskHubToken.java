@@ -1,8 +1,8 @@
 package com.api.artezans.tokens.model;
 
+import com.api.artezans.users.models.User;
 import jakarta.persistence.*;
 import lombok.*;
-import task.hub.user.users.models.User;
 
 import static jakarta.persistence.CascadeType.PERSIST;
 import static jakarta.persistence.GenerationType.IDENTITY;

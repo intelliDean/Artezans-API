@@ -1,16 +1,16 @@
 package com.api.artezans.listings.data.dtos;
 
+import com.api.artezans.listings.data.enums.AvailableDays;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
 import org.springframework.web.multipart.MultipartFile;
-import task.hub.user.listings.data.enums.AvailableDays;
 
 import java.math.BigDecimal;
 import java.util.Set;
 
-import static task.hub.user.utils.TaskHubUtils.NOT_BLANK;
-import static task.hub.user.utils.TaskHubUtils.NOT_NULL;
+import static com.api.artezans.utils.TaskHubUtils.*;
+
 
 @Setter
 @Getter

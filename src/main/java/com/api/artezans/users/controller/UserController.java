@@ -1,24 +1,24 @@
 package com.api.artezans.users.controller;
 
 
+import com.api.artezans.exceptions.TaskHubException;
+import com.api.artezans.exceptions.TokenException;
+import com.api.artezans.password.dtos.EmailParam;
+import com.api.artezans.password.dtos.ResetPasswordRequest;
+import com.api.artezans.users.models.User;
+import com.api.artezans.users.services.UserService;
+import com.api.artezans.utils.ApiResponse;
+import com.api.artezans.utils.TaskHubUtils;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
-import task.hub.exceptions.TaskHubException;
-import task.hub.exceptions.TokenException;
-import task.hub.user.password.dtos.EmailParam;
-import task.hub.user.password.dtos.ResetPasswordRequest;
-import task.hub.user.users.models.User;
-import task.hub.user.users.services.UserService;
-import task.hub.user.utils.ApiResponse;
-import task.hub.user.utils.TaskHubUtils;
 
 import java.util.Optional;
 
-import static task.hub.user.utils.ApiResponse.apiResponse;
+import static com.api.artezans.utils.ApiResponse.apiResponse;
 
 @Slf4j
 @Component

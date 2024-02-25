@@ -4,6 +4,7 @@ import com.api.artezans.booking.data.dto.BookingRequest;
 import com.api.artezans.booking.data.dto.RejectionRequest;
 import com.api.artezans.booking.service.BookingService;
 import com.api.artezans.config.security.SecuredUser;
+import com.api.artezans.exceptions.TaskHubException;
 import com.api.artezans.payment.stripe.dto.Response;
 import com.api.artezans.utils.ApiResponse;
 import com.paypal.api.payments.Payment;

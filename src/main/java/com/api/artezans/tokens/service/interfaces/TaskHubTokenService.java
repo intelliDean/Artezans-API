@@ -1,6 +1,7 @@
 package com.api.artezans.tokens.service.interfaces;
 
-import task.hub.user.tokens.model.TaskHubToken;
+
+import com.api.artezans.tokens.model.TaskHubToken;
 
 import java.util.Optional;
 

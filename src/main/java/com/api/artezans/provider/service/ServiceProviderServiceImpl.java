@@ -1,5 +1,31 @@
 package com.api.artezans.provider.service;
 
+import com.api.artezans.authentication.services.AuthService;
+import com.api.artezans.config.security.SecuredUser;
+import com.api.artezans.exceptions.TaskHubException;
+import com.api.artezans.exceptions.UserNotFoundException;
+import com.api.artezans.listings.data.models.Listing;
+import com.api.artezans.listings.services.ServiceProviderListingService;
+import com.api.artezans.multimedia.MultimediaService;
+import com.api.artezans.notifications.app_notification.model.AppNotification;
+import com.api.artezans.notifications.app_notification.service.AppNotificationService;
+import com.api.artezans.payment.stripe.dto.CreateCustomerRequest;
+import com.api.artezans.payment.stripe.services.StripeService;
+import com.api.artezans.provider.data.dto.ServiceProviderRegistrationRequest;
+import com.api.artezans.provider.data.dto.ServiceProviderUpdateRequest;
+import com.api.artezans.provider.data.model.IdType;
+import com.api.artezans.provider.data.model.ServiceProvider;
+import com.api.artezans.provider.data.model.UserIdentity;
+import com.api.artezans.provider.data.repository.ServiceProviderRepository;
+import com.api.artezans.provider.data.repository.UserIdentityRepository;
+import com.api.artezans.task.data.model.Task;
+import com.api.artezans.task.service.ServiceProviderTaskService;
+import com.api.artezans.users.models.Address;
+import com.api.artezans.users.models.User;
+import com.api.artezans.users.models.enums.AccountState;
+import com.api.artezans.users.models.enums.Role;
+import com.api.artezans.users.services.UserService;
+import com.api.artezans.utils.ApiResponse;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -15,40 +41,14 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
-import task.hub.exceptions.TaskHubException;
-import task.hub.exceptions.UserNotFoundException;
-import task.hub.multimedia.MultimediaService;
-import task.hub.payment.stripe.dto.CreateCustomerRequest;
-import task.hub.payment.stripe.services.StripeService;
-import task.hub.user.app_notification.model.AppNotification;
-import task.hub.user.app_notification.service.AppNotificationService;
-import task.hub.user.authentication.services.AuthenticationService;
-import task.hub.user.config.security.SecuredUser;
-import task.hub.user.listings.data.models.Listing;
-import task.hub.user.listings.services.ServiceProviderListingService;
-import task.hub.user.service.provider.data.dto.ServiceProviderRegistrationRequest;
-import task.hub.user.service.provider.data.dto.ServiceProviderUpdateRequest;
-import task.hub.user.service.provider.data.model.IdType;
-import task.hub.user.service.provider.data.model.ServiceProvider;
-import task.hub.user.service.provider.data.model.UserIdentity;
-import task.hub.user.service.provider.data.repository.ServiceProviderRepository;
-import task.hub.user.service.provider.data.repository.UserIdentityRepository;
-import task.hub.user.task.data.model.Task;
-import task.hub.user.task.service.ServiceProviderTaskService;
-import task.hub.user.users.models.Address;
-import task.hub.user.users.models.User;
-import task.hub.user.users.models.enums.AccountState;
-import task.hub.user.users.models.enums.Role;
-import task.hub.user.users.services.UserService;
-import task.hub.user.utils.ApiResponse;
 
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static task.hub.user.utils.ApiResponse.apiResponse;
-import static task.hub.user.utils.TaskHubUtils.SERVICE_PROVIDER;
-import static task.hub.user.utils.TaskHubUtils.capitalized;
+import static com.api.artezans.utils.ApiResponse.apiResponse;
+import static com.api.artezans.utils.TaskHubUtils.SERVICE_PROVIDER;
+import static com.api.artezans.utils.TaskHubUtils.capitalized;
 
 @Slf4j
 @Service
@@ -59,7 +59,7 @@ public class ServiceProviderServiceImpl implements ServiceProviderService {
     private final ServiceProviderRepository serviceProviderRepository;
     private final UserIdentityRepository userIdentityRepository;
     private final AppNotificationService appNotificationService;
-    private final AuthenticationService authenticationService;
+    private final AuthService authenticationService;
     private final MultimediaService multimediaService;
     private final PasswordEncoder passwordEncoder;
     private final StripeService stripeService;

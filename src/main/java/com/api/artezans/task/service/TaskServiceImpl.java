@@ -1,23 +1,23 @@
 package com.api.artezans.task.service;
 
+import com.api.artezans.config.security.SecuredUser;
+import com.api.artezans.exceptions.TaskHubException;
+import com.api.artezans.exceptions.UserNotAuthorizedException;
+import com.api.artezans.listings.data.models.Listing;
+import com.api.artezans.listings.services.ListingService;
+import com.api.artezans.multimedia.MultimediaService;
+import com.api.artezans.notifications.app_notification.model.AppNotification;
+import com.api.artezans.notifications.app_notification.service.AppNotificationService;
+import com.api.artezans.task.data.dto.TaskRequest;
+import com.api.artezans.task.data.model.Task;
+import com.api.artezans.task.data.repo.TaskRepository;
+import com.api.artezans.users.models.User;
+import com.api.artezans.utils.ApiResponse;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
-import task.hub.exceptions.TaskHubException;
-import task.hub.exceptions.UserNotAuthorizedException;
-import task.hub.multimedia.MultimediaService;
-import task.hub.user.app_notification.model.AppNotification;
-import task.hub.user.app_notification.service.AppNotificationService;
-import task.hub.user.config.security.SecuredUser;
-import task.hub.user.listings.data.models.Listing;
-import task.hub.user.listings.services.ListingService;
-import task.hub.user.task.data.dto.TaskRequest;
-import task.hub.user.task.data.model.Task;
-import task.hub.user.task.data.repo.TaskRepository;
-import task.hub.user.users.models.User;
-import task.hub.user.utils.ApiResponse;
 
 import java.time.LocalDateTime;
 import java.util.Collections;
@@ -25,8 +25,9 @@ import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.stream.Collectors;
 
-import static task.hub.user.utils.ApiResponse.apiResponse;
-import static task.hub.user.utils.TaskHubUtils.*;
+import static com.api.artezans.utils.ApiResponse.apiResponse;
+import static com.api.artezans.utils.TaskHubUtils.*;
+
 
 @Slf4j
 @Service

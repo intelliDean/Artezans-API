@@ -1,9 +1,9 @@
 package com.api.artezans.listings.data.repositories;
 
+import com.api.artezans.listings.data.models.Listing;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
-import task.hub.user.listings.data.models.Listing;
 
 import java.math.BigDecimal;
 import java.util.List;

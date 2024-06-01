@@ -9,6 +9,7 @@ import java.io.IOException;
 
 
 public interface AuthService {
+
     AuthResponse authenticateAndGetToken(AuthRequest authRequest);
 
     void logout(HttpServletRequest request, HttpServletResponse response) throws IOException;

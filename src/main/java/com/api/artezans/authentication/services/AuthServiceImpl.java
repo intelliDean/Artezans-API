@@ -54,7 +54,8 @@ public class AuthServiceImpl implements AuthService {
     @Override
     @Transactional(propagation = REQUIRED)
     public AuthResponse authenticateAndGetToken(AuthRequest authRequest) {
-        User user = userService.findUserByEmail(authRequest.getEmailAddress());
+       final User user = userService.findUserByEmail(authRequest.getEmailAddress());
+
         if (user.getAccountState().equals(AccountState.NOT_VERIFIED)) {
             unverifiedUserEmailAddress(user);
         } else if (user.getAccountState().equals(AccountState.DEACTIVATED)) {
@@ -115,6 +116,7 @@ public class AuthServiceImpl implements AuthService {
     }
 
     private void updateTokenAndResendVerificationMail(User user) {
+
         TaskHubVerificationToken token = taskHubVerificationTokenService.findByEmail(user.getEmailAddress());
         String generatedToken = TaskHubUtils.generateToken(12);
         String emailAddress = user.getEmailAddress();
@@ -161,6 +163,5 @@ public class AuthServiceImpl implements AuthService {
             }
         }
     }
-
 }
 

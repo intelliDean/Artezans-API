@@ -121,6 +121,5 @@ public class JwtService {
         return claims;
     }
 
-    public record Tokens(String accessToken, String refreshToken) {
-    }
+    public record Tokens(String accessToken, String refreshToken) {}
 }

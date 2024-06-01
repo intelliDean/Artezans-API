@@ -23,7 +23,7 @@ public class TaskHubUtils {
     public static final String REACTIVATED = "Account reactivated successfully. Kindly proceed to login.";
     public static final String DEACTIVATED = "You account is deactivated. Activate your account to log in";
     public static final String NOT_NULL = " cannot be null";
-    public static final String EMAIL = "Please provide a valid email address";
+    public static final String EMAIL_ERROR_MSG = "Please provide a valid email address";
     public static final String NOT_BLANK = " cannot be blank";
     public static final String NO_LISTINGS = "No listings found";
     public static final String CUSTOMER_NOT_FOUND = "Customer not found";

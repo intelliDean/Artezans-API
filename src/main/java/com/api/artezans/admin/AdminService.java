@@ -14,9 +14,8 @@ public class AdminService {
     private final AuthService authService;
 
     public AuthResponse adminLogin(AuthRequest authRequest) {
-        final String adminEmail = "info@taskhub.com";
-
-        if (authRequest.getEmailAddress().equals(adminEmail)) {
+//        final String adminEmail = "info@taskhub.com";
+        if (authRequest.getEmailAddress().equals("info@artezans.com")) {
             return authService.authenticateAndGetToken(authRequest);
         }
         throw new UserNotAuthorizedException();

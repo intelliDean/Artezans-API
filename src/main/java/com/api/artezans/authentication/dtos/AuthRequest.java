@@ -14,7 +14,7 @@ import static com.api.artezans.utils.TaskHubUtils.*;
 @AllArgsConstructor
 @NoArgsConstructor
 public class AuthRequest {
-    @Email(message = EMAIL)
+    @Email(message = EMAIL_ERROR_MSG)
     @NotNull(message = "Email Address" + NOT_NULL)
     @NotBlank(message = "Email Address" + NOT_BLANK)
     private String emailAddress;

@@ -12,8 +12,8 @@ import java.io.IOException;
 import java.util.Map;
 
 @Service
-@Profile("!default")
 @AllArgsConstructor
+@Profile("!default")
 public class CloudinaryMultimediaServiceImpl implements MultimediaService {
 
     private final Cloudinary cloudinary;

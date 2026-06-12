@@ -48,7 +48,7 @@ public class SecurityConfig implements WebMvcConfigurer {
                         httpRequest.requestMatchers(NoAuth.whiteList()).permitAll()
                                 .requestMatchers(NoAuth.swagger()).permitAll()
                                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                                .requestMatchers("api/v1/user/deactivate").authenticated()
+                                .requestMatchers("/api/v1/user/deactivate").authenticated()
                                 .anyRequest().authenticated())
                 .sessionManagement(sessionMgt ->
                         sessionMgt.sessionCreationPolicy(SessionCreationPolicy.STATELESS))

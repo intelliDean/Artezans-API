@@ -5,14 +5,13 @@ import com.api.artezans.users.models.User;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.stereotype.Service;
 
-import java.security.Key;
+import javax.crypto.SecretKey;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Date;
@@ -23,14 +22,15 @@ import java.util.function.Function;
 @Service
 @RequiredArgsConstructor
 public class JwtService {
+
     private final TaskHubTokenService taskHubTokenService;
-    private final Key key;
+    private final SecretKey secretKey;
 
     @Value("${access_expiration}")
     private Long accessExpiration;
+
     @Value("${refresh_expiration}")
     private Long refreshExpiration;
-
 
     public String extractUsername(String token) {
         return extractClaim(token, Claims::getSubject);
@@ -42,34 +42,32 @@ public class JwtService {
     }
 
     private Claims extractAllClaims(String token) {
-        return Jwts
-                .parserBuilder()
-                .setSigningKey(key)
+        return Jwts.parser()
+                .verifyWith(secretKey)
                 .build()
-                .parseClaimsJws(token)
-                .getBody();
+                .parseSignedClaims(token)
+                .getPayload();
     }
 
-    private Boolean isValid(String token) {
+    private boolean isValid(String token) {
         try {
-            final Claims claims = Jwts.parserBuilder()
-                    .setSigningKey(key)
+            final Claims claims = Jwts.parser()
+                    .verifyWith(secretKey)
                     .build()
-                    .parseClaimsJws(token)
-                    .getBody();
+                    .parseSignedClaims(token)
+                    .getPayload();
             final Date expiration = claims.getExpiration();
-            return expiration != null &&
-                    expiration.after(Date.from(Instant.now()));
+            return expiration != null && expiration.after(Date.from(Instant.now()));
         } catch (JwtException e) {
             return false;
         }
     }
 
-    private Boolean isRevoked(String token) {
+    private boolean isRevoked(String token) {
         return taskHubTokenService.isTokenValid(token);
     }
 
-    public Boolean validateToken(String token) {
+    public boolean validateToken(String token) {
         return isValid(token) && isRevoked(token);
     }
 
@@ -96,14 +94,13 @@ public class JwtService {
         return createToken(new HashMap<>(), userName, refreshExpiration);
     }
 
-
     private String createToken(Map<String, Object> claims, String userName, Long expiration) {
         return Jwts.builder()
-                .setClaims(claims)
-                .setSubject(userName)
-                .setIssuedAt(Date.from(Instant.now()))
-                .setExpiration(Date.from(Instant.now().plus(Duration.ofHours(expiration))))
-                .signWith(key, SignatureAlgorithm.HS256)
+                .claims(claims)
+                .subject(userName)
+                .issuedAt(Date.from(Instant.now()))
+                .expiration(Date.from(Instant.now().plus(Duration.ofHours(expiration))))
+                .signWith(secretKey)
                 .compact();
     }
 

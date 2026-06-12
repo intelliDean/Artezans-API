@@ -33,7 +33,7 @@ import java.time.LocalDateTime;
 
 import static com.api.artezans.utils.TaskHubUtils.BEARER;
 import static com.api.artezans.utils.TaskHubUtils.DEACTIVATED;
-import static org.apache.http.HttpHeaders.AUTHORIZATION;
+import static org.springframework.http.HttpHeaders.AUTHORIZATION;
 import static org.springframework.transaction.annotation.Propagation.REQUIRED;
 
 @Service

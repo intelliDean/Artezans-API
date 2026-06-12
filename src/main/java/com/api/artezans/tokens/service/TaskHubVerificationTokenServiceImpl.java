@@ -55,7 +55,7 @@ public class TaskHubVerificationTokenServiceImpl implements TaskHubVerificationT
     }
 
     @Scheduled(cron = "0 0 0 * * ?", zone = "Australia/Sydney") //scheduled to run every midnight
-    private void deleteAllInvalidTokens() {
+    void deleteAllInvalidTokens() {
         final List<TaskHubVerificationToken> allRevokedTokens =
                 taskHubVerificationTokenRepository.findAllInvalidTokens();
         if (!allRevokedTokens.isEmpty()) {
@@ -64,7 +64,7 @@ public class TaskHubVerificationTokenServiceImpl implements TaskHubVerificationT
     }
 
     @Scheduled(cron = "0 0 * * * ?", zone = "Australia/Sydney")
-    private void setExpiredToken() {
+    void setExpiredToken() {
         final List<TaskHubVerificationToken> tokens = taskHubVerificationTokenRepository.findAllValidTokens();
         tokens.stream().filter(token -> token.getExpireAt().isBefore(LocalDateTime.now())
         ).forEach(init -> init.setExpired(true));

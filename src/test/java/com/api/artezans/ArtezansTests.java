@@ -1,7 +1,7 @@
 package com.api.artezans;
 
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 //@SpringBootTest
 class ArtezansTests {

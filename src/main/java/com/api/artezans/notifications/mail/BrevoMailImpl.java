@@ -1,6 +1,5 @@
 package com.api.artezans.notifications.mail;
 
-
 import com.api.artezans.notifications.mail.dto.EmailRequest;
 import com.api.artezans.notifications.mail.dto.MailInfo;
 import lombok.RequiredArgsConstructor;
@@ -10,10 +9,11 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
+
 @Slf4j
 @Service
-@Profile("!default")
 @RequiredArgsConstructor
+@Profile("!default")
 public class BrevoMailImpl implements MailService {
     private final WebClient.Builder webClient;
 

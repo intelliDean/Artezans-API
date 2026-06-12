@@ -13,9 +13,9 @@ public class NoAuth {
                 "/api/v1/customer/complete",
                 "/api/v1/user/**",
                 "/api/v1/service_provider/complete",
-                "api/v1/change-password/change",
+                "/api/v1/change-password/change",
                 "/api/v1/auth/**",
-                "api/v1/booking/stripe-webhook"
+                "/api/v1/booking/stripe-webhook"
         };
     }
 

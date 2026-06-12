@@ -29,7 +29,7 @@ task:
       key: ${SECRET_KEY:OIDCu9SZ9U5LGqF6mW12KxLuSxO70GPfqw3W2fh4uciXEi17bxij7229eNsVXRZnpsOa7pMb8gGbfJdl8YmnZ5uuaA43RPRH1v8720TWYUwAST90hzdLdzVYh54WXm44}
 sendinblue:
   mail:
-    api_key: ${API_KEY}
+    api_key: ${API_KEY:}
     url: ${MAIL_URL:https://api.brevo.com/v3/smtp/email}
   sms:
     url: ${SMS_URL:https://api.brevo.com/v3/transactionalSMS/sms}

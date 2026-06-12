@@ -10,19 +10,12 @@ import org.springframework.security.oauth2.core.user.OAuth2User;
 import java.util.Collection;
 import java.util.Map;
 import java.util.stream.Collectors;
-@Getter
-//@AllArgsConstructor
-public class SecuredUser implements UserDetails, OAuth2User {
-     private final User user;
-   //  private Collection<? extends GrantedAuthority> authorities;
-     private Map<String, Object> attributes;
 
-    @Override
-    public Collection<? extends GrantedAuthority> getAuthorities() {
-        return user.getRoles().stream()
-                .map(role -> new SimpleGrantedAuthority(role.name()))
-                .collect(Collectors.toSet());
-    }
+@Getter
+public class SecuredUser implements UserDetails, OAuth2User {
+
+    private final User user;
+    private Map<String, Object> attributes;
 
     public SecuredUser(User user) {
         this.user = user;
@@ -31,6 +24,13 @@ public class SecuredUser implements UserDetails, OAuth2User {
     public SecuredUser(User user, Map<String, Object> attributes) {
         this(user);
         this.attributes = attributes;
+    }
+
+    @Override
+    public Collection<? extends GrantedAuthority> getAuthorities() {
+        return user.getRoles().stream()
+                .map(role -> new SimpleGrantedAuthority(role.name()))
+                .collect(Collectors.toSet());
     }
 
     @Override
@@ -66,5 +66,10 @@ public class SecuredUser implements UserDetails, OAuth2User {
     @Override
     public String getName() {
         return "%s %s".formatted(user.getFirstName(), user.getLastName());
+    }
+
+    @Override
+    public Map<String, Object> getAttributes() {
+        return attributes != null ? attributes : Map.of();
     }
 }

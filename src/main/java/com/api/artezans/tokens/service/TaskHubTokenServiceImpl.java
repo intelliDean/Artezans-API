@@ -9,7 +9,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
+
 
 @Service
 @AllArgsConstructor
@@ -44,7 +44,7 @@ public class TaskHubTokenServiceImpl implements TaskHubTokenService {
                 taskHubTokenRepository.findAllTokenByUserId(userId)
                 .stream()
                 .peek(token -> token.setRevoked(true))
-                .collect(Collectors.toList())
+                .toList()
         );
     }
 
@@ -57,7 +57,7 @@ public class TaskHubTokenServiceImpl implements TaskHubTokenService {
     }
 
     @Scheduled(cron = "0 0 0 * * ?", zone = "Australia/Sydney") //schedule to run every midnight
-    private void deleteAllRevokedTokens() {
+    void deleteAllRevokedTokens() {
         final List<TaskHubToken> allRevokedTokens =
                 taskHubTokenRepository.findAllInvalidTokens();
         if (!allRevokedTokens.isEmpty()) {

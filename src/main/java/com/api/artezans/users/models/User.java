@@ -80,6 +80,7 @@ public class User {
     private Set<Role> roles;
 
     @OneToMany(mappedBy = "recipient", fetch = LAZY)
+    @Builder.Default
     List<AppNotification> appNotificationList = new ArrayList<>();
 
     @Override

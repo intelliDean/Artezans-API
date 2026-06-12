@@ -3,6 +3,7 @@ package com.api.artezans.config.security;
 import com.api.artezans.users.models.User;
 import com.api.artezans.users.services.UserService;
 import lombok.RequiredArgsConstructor;
+import org.jspecify.annotations.NonNull;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -13,7 +14,7 @@ import org.springframework.stereotype.Service;
 public class AppUserDetailsService implements UserDetailsService {
     private final UserService userService;
 
-    public UserDetails loadUserByUsername(String emailAddress) throws UsernameNotFoundException {
+    public @NonNull UserDetails loadUserByUsername(@NonNull String emailAddress) throws UsernameNotFoundException {
         User user = userService.findUserByEmail(emailAddress);
         return new SecuredUser(user);
     }

@@ -1,9 +1,5 @@
 package com.api.artezans.config.utils;
 
-import com.api.artezans.multimedia.CloudinaryMultimediaServiceImpl;
-import com.api.artezans.multimedia.MultimediaService;
-import com.api.artezans.notifications.mail.BrevoMailImpl;
-import com.api.artezans.notifications.mail.MailService;
 import com.cloudinary.Cloudinary;
 import com.cloudinary.utils.ObjectUtils;
 import io.jsonwebtoken.io.Decoders;
@@ -15,7 +11,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.thymeleaf.context.Context;
 
-import java.security.Key;
+import javax.crypto.SecretKey;
 
 import static org.modelmapper.config.Configuration.AccessLevel.PRIVATE;
 import static org.modelmapper.convention.MatchingStrategies.STANDARD;
@@ -66,19 +62,15 @@ public class AppConfig {
     }
 
     @Bean
-    public MailService mailService() {
-        return new BrevoMailImpl(getWebClientBuilder());
+    public com.fasterxml.jackson.databind.ObjectMapper objectMapper() {
+        com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+        mapper.findAndRegisterModules();
+        return mapper;
     }
 
     @Bean
-    public MultimediaService multimediaService() {
-        return new CloudinaryMultimediaServiceImpl(cloudinary());
-    }
-
-    @Bean
-    public Key getSignKey() {
+    public SecretKey secretKey() {
         byte[] keyBytes = Decoders.BASE64.decode(SECRET);
         return Keys.hmacShaKeyFor(keyBytes);
     }
-
 }

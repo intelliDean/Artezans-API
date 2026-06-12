@@ -132,7 +132,7 @@ public class ChangePasswordServiceImpl implements ChangePasswordService {
     }
 
     @Scheduled(cron = "0 0 0 * * ?", zone = "Australia/Sydney") //scheduled to run every midnight
-    private void deleteAllRevokedTokens() {
+    void deleteAllRevokedTokens() {
         final List<ChangePasswordToken> allRevokedTokens = changePasswordTokenRepository.findAllRevokedTokens();
         if (!allRevokedTokens.isEmpty()) {
             changePasswordTokenRepository.deleteAll(allRevokedTokens);

@@ -6,21 +6,17 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import lombok.*;
 
-import static com.api.artezans.utils.TaskHubUtils.*;
+import static com.api.artezans.utils.ArtezanUtils.*;
 
-@Setter
-@Getter
-@Builder
-@AllArgsConstructor
-@NoArgsConstructor
-public class AuthRequest {
-    @Email(message = EMAIL_ERROR_MSG)
-    @NotNull(message = "Email Address" + NOT_NULL)
-    @NotBlank(message = "Email Address" + NOT_BLANK)
-    private String emailAddress;
+//@Builder
+public record AuthRequest(
+        @Email(message = EMAIL_ERROR_MSG)
+        @NotNull(message = "Email Address" + NOT_NULL)
+        @NotBlank(message = "Email Address" + NOT_BLANK)
+        String emailAddress,
 
-    @NotNull(message = "Password" + NOT_NULL)
-    @NotBlank(message = "Password" + NOT_BLANK)
-    @Pattern(regexp = VALID_PASSWORD, message = PASSWORD_MESSAGE)
-    private String password;
-}
+        @NotNull(message = "Password" + NOT_NULL)
+        @NotBlank(message = "Password" + NOT_BLANK)
+        @Pattern(regexp = VALID_PASSWORD, message = PASSWORD_MESSAGE)
+        String password
+) {}

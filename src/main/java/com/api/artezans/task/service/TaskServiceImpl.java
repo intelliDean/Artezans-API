@@ -1,7 +1,7 @@
 package com.api.artezans.task.service;
 
 import com.api.artezans.config.security.SecuredUser;
-import com.api.artezans.exceptions.TaskHubException;
+import com.api.artezans.exceptions.ArtezanException;
 import com.api.artezans.exceptions.UserNotAuthorizedException;
 import com.api.artezans.listings.data.models.Listing;
 import com.api.artezans.listings.services.ListingService;
@@ -26,7 +26,7 @@ import java.util.NoSuchElementException;
 import java.util.stream.Collectors;
 
 import static com.api.artezans.utils.ApiResponse.apiResponse;
-import static com.api.artezans.utils.TaskHubUtils.*;
+import static com.api.artezans.utils.ArtezanUtils.*;
 
 
 @Slf4j
@@ -51,9 +51,9 @@ public class TaskServiceImpl implements TaskService {
             log.info("{} successfully posted a task for {}", user.getFirstName(), request.getTaskServiceName());
             return apiResponse(TASK_CREATED);
         } catch (NoSuchElementException e) {
-            throw new TaskHubException(CUSTOMER_NOT_FOUND);
+            throw new ArtezanException(CUSTOMER_NOT_FOUND);
         } catch (Exception exception) {
-            throw new TaskHubException(exception.getMessage());
+            throw new ArtezanException(exception.getMessage());
         }
     }
 
@@ -70,7 +70,7 @@ public class TaskServiceImpl implements TaskService {
     @Override
     public ApiResponse deletePost(Long postId) {
         Task task = taskRepository.findById(postId)
-                .orElseThrow(() -> new TaskHubException("Task not found"));
+                .orElseThrow(() -> new ArtezanException("Task not found"));
         User user = currentUser();
         log.info("{} is trying to delete task: {}", user.getFirstName(), task.getId());
         if (user.getId().equals(task.getPosterId())) {
@@ -100,7 +100,7 @@ public class TaskServiceImpl implements TaskService {
         try {
             imageUrl = multimediaService.upload(image);
         } catch (Exception ex) {
-            throw new TaskHubException(ex.getMessage());
+            throw new ArtezanException(ex.getMessage());
         }
         return imageUrl;
     }
@@ -147,7 +147,7 @@ public class TaskServiceImpl implements TaskService {
                     .getPrincipal();
             return securedUser.getUser();
         } catch (Exception e) {
-            throw new TaskHubException("User not authenticated");
+            throw new ArtezanException("User not authenticated");
         }
     }
 }

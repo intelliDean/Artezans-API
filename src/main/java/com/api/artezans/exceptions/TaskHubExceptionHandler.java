@@ -15,9 +15,9 @@ import java.util.Map;
 @RestControllerAdvice
 public class TaskHubExceptionHandler {
 
-    @ExceptionHandler(TaskHubException.class)
+    @ExceptionHandler(ArtezanException.class)
     public ResponseEntity<TaskHubExceptionResponse> handleException(
-            TaskHubException exception
+            ArtezanException exception
     ) {
         return ResponseEntity.badRequest()
                 .body(

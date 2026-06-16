@@ -1,7 +1,7 @@
 package com.api.artezans.tokens.service;
 
 import com.api.artezans.tokens.model.TaskHubToken;
-import com.api.artezans.tokens.repository.TaskHubTokenRepository;
+import com.api.artezans.tokens.repository.ArtezanTokenRepository;
 import com.api.artezans.tokens.service.interfaces.TaskHubTokenService;
 import lombok.AllArgsConstructor;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -15,17 +15,17 @@ import java.util.Optional;
 @AllArgsConstructor
 public class TaskHubTokenServiceImpl implements TaskHubTokenService {
 
-    private final TaskHubTokenRepository taskHubTokenRepository;
+    private final ArtezanTokenRepository artezanTokenRepository;
 
 
     @Override
     public void saveToken(TaskHubToken taskHubToken) {
-        taskHubTokenRepository.save(taskHubToken);
+        artezanTokenRepository.save(taskHubToken);
     }
 
     @Override
     public Optional<TaskHubToken> getValidTokenByAnyToken(String anyToken) {
-        return taskHubTokenRepository.findValidTokenByToken(anyToken);
+        return artezanTokenRepository.findValidTokenByToken(anyToken);
     }
 
     @Override
@@ -34,14 +34,14 @@ public class TaskHubTokenServiceImpl implements TaskHubTokenService {
                 .orElse(null);
         if (taskHubToken != null) {
             taskHubToken.setRevoked(true);
-            taskHubTokenRepository.save(taskHubToken);
+            artezanTokenRepository.save(taskHubToken);
         }
     }
 
     @Override
     public void revokeToken(Long userId) {
-        taskHubTokenRepository.saveAll(
-                taskHubTokenRepository.findAllTokenByUserId(userId)
+        artezanTokenRepository.saveAll(
+                artezanTokenRepository.findAllTokenByUserId(userId)
                 .stream()
                 .peek(token -> token.setRevoked(true))
                 .toList()
@@ -59,9 +59,9 @@ public class TaskHubTokenServiceImpl implements TaskHubTokenService {
     @Scheduled(cron = "0 0 0 * * ?", zone = "Australia/Sydney") //schedule to run every midnight
     void deleteAllRevokedTokens() {
         final List<TaskHubToken> allRevokedTokens =
-                taskHubTokenRepository.findAllInvalidTokens();
+                artezanTokenRepository.findAllInvalidTokens();
         if (!allRevokedTokens.isEmpty()) {
-            taskHubTokenRepository.deleteAll(allRevokedTokens);
+            artezanTokenRepository.deleteAll(allRevokedTokens);
         }
     }
 }

@@ -1,7 +1,7 @@
 package com.api.artezans.config.utils;
 
 
-import com.api.artezans.exceptions.TaskHubException;
+import com.api.artezans.exceptions.ArtezanException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -42,7 +42,7 @@ public class TaskHubAccessDeniedHandler implements AccessDeniedHandler {
             objectMapper.writeValue(writer, data);
         } catch (IOException e) {
             log.info("IOException message: {}", e.getMessage());
-            throw new TaskHubException("Error writing JSON response");
+            throw new ArtezanException("Error writing JSON response");
         }
     }
 }

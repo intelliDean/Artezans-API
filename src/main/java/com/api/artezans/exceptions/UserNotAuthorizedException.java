@@ -2,7 +2,7 @@ package com.api.artezans.exceptions;
 
 import org.springframework.http.HttpStatus;
 
-public class UserNotAuthorizedException extends TaskHubException {
+public class UserNotAuthorizedException extends ArtezanException {
 
     public UserNotAuthorizedException() {
         this("Unauthorized");

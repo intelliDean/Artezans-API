@@ -2,7 +2,7 @@ package com.api.artezans.config.Oauth2;
 
 import com.api.artezans.config.security.JwtService;
 import com.api.artezans.config.security.SecuredUser;
-import com.api.artezans.exceptions.TaskHubException;
+import com.api.artezans.exceptions.ArtezanException;
 import com.api.artezans.tokens.model.TaskHubToken;
 import com.api.artezans.tokens.service.interfaces.TaskHubTokenService;
 import com.api.artezans.users.models.User;
@@ -63,7 +63,7 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
                 .map(Cookie::getValue);
 
         if (redirectUri.isPresent() && !isAuthorizedRedirectUri(redirectUri.get())) {
-            throw new TaskHubException(
+            throw new ArtezanException(
                     "Sorry! We've got an Unauthorized Redirect URI and can't proceed with the authentication"
             );
         }

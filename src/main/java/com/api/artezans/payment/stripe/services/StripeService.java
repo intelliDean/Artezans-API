@@ -1,7 +1,7 @@
 package com.api.artezans.payment.stripe.services;
 
 
-import com.api.artezans.exceptions.TaskHubException;
+import com.api.artezans.exceptions.ArtezanException;
 import com.api.artezans.payment.stripe.dto.*;
 import com.stripe.Stripe;
 import com.stripe.exception.StripeException;
@@ -53,7 +53,7 @@ public class StripeService {
             Customer customer = Customer.create(params);
             return customer.getId();
         } catch (StripeException e) {
-            throw new TaskHubException(e.getMessage());
+            throw new ArtezanException(e.getMessage());
         }
     }
 
@@ -61,7 +61,7 @@ public class StripeService {
         try {
             return Customer.retrieve(customerId);
         } catch (StripeException e) {
-            throw new TaskHubException(e.getMessage());
+            throw new ArtezanException(e.getMessage());
         }
     }
 
@@ -79,7 +79,7 @@ public class StripeService {
 
             customer.update(updateParams);
         } catch (StripeException e) {
-            throw new TaskHubException(e.getMessage());
+            throw new ArtezanException(e.getMessage());
         }
         return "update successfully";
     }
@@ -90,7 +90,7 @@ public class StripeService {
             Customer deletedCustomer = customer.delete();
             return deletedCustomer.toJson();
         } catch (StripeException e) {
-            throw new TaskHubException(e.getMessage());
+            throw new ArtezanException(e.getMessage());
         }
     }
 
@@ -101,7 +101,7 @@ public class StripeService {
         try {
             customerCollection = Customer.list(params);
         } catch (StripeException e) {
-            throw new TaskHubException(e.getMessage());
+            throw new ArtezanException(e.getMessage());
         }
         List<StripeResponse> stripeResponses = new ArrayList<>();
         for (Customer customer : customerCollection.autoPagingIterable()) {
@@ -137,7 +137,7 @@ public class StripeService {
         try {
             product = Product.create(params);
         } catch (StripeException e) {
-            throw new TaskHubException(e.getMessage());
+            throw new ArtezanException(e.getMessage());
         }
         return product.getId();
     }
@@ -170,7 +170,7 @@ public class StripeService {
                     .clientSecret(intent.getClientSecret())
                     .build();
         } catch (StripeException e) {
-            throw new TaskHubException(e.getMessage());
+            throw new ArtezanException(e.getMessage());
         }
     }
 }

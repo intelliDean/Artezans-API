@@ -6,7 +6,7 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import lombok.*;
 
-import static com.api.artezans.utils.TaskHubUtils.*;
+import static com.api.artezans.utils.ArtezanUtils.*;
 
 @Setter
 @Getter

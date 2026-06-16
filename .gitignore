@@ -34,3 +34,6 @@ build/
 
 
 src/main/resources/application.yml
+
+### Secrets — never commit ###
+.env

@@ -8,6 +8,8 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.AuthenticationProvider;
+import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -31,10 +33,6 @@ public class SecurityConfig implements WebMvcConfigurer {
     private final AuthenticationEntryPoint authenticationEntryPoint;
     private final UserDetailsService userDetailsService;
     private final JwtAuthFilter jwtAuthFilter;
-
-
-    //    private final Oauth2CustomUserService customOAuth2UserService;
-//    private final OAuth2AuthenticationSuccessHandler oAuth2AuthenticationSuccessHandler;
     private final OAuth2AuthenticationFailureHandler oAuth2AuthenticationFailureHandler;
     private final HttpCookieOAuth2AuthorizationRequestRepository httpCookieOAuth2AuthorizationRequestRepository;
 
@@ -52,24 +50,23 @@ public class SecurityConfig implements WebMvcConfigurer {
                                 .anyRequest().authenticated())
                 .sessionManagement(sessionMgt ->
                         sessionMgt.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-//                .rememberMe(rmbme ->
-//                        rmbme.tokenRepository(new JdbcTokenRepositoryImpl())
-//                                .tokenValiditySeconds(604800)
-//                                .tokenValiditySeconds(604800))
-//                .oauth2Login(oauth2Login ->
-//                        oauth2Login.authorizationEndpoint(authorizationEndpoint ->
-//                                        authorizationEndpoint.baseUri("/auth/oauth2/authorize")
-//                                                .authorizationRequestRepository(cookieAuthorizationRequestRepository()))
-//                                .redirectionEndpoint(redirectionEndpoint ->
-//                                        redirectionEndpoint.baseUri("/login/oauth2/code/*"))
-//                                .userInfoEndpoint(userInfoEndpoint ->
-//                                        userInfoEndpoint.userService(customOAuth2UserService))
-//                                .successHandler(oAuth2AuthenticationSuccessHandler)
-//                                .failureHandler(oAuth2AuthenticationFailureHandler))
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
         return http.build();
     }
 
+    /**
+     * Provides a {@link DaoAuthenticationProvider} as an explicit bean.
+     * Spring Security's built-in implementation already handles UserDetailsService
+     * lookup + password matching — no need for a custom reimplementation.
+     * Declaring it here keeps the AuthenticationManager wiring clean and
+     * eliminates the "UserDetailsService beans will not be used" warning.
+     */
+    @Bean
+    public AuthenticationProvider authenticationProvider() {
+        DaoAuthenticationProvider provider = new DaoAuthenticationProvider(userDetailsService);
+        provider.setPasswordEncoder(passwordEncoder());
+        return provider;
+    }
 
     @Bean
     public PasswordEncoder passwordEncoder() {

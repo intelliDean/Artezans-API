@@ -1,14 +1,14 @@
 package com.api.artezans.users.controller;
 
 
-import com.api.artezans.exceptions.TaskHubException;
+import com.api.artezans.exceptions.ArtezanException;
 import com.api.artezans.exceptions.TokenException;
 import com.api.artezans.password.dtos.EmailParam;
 import com.api.artezans.password.dtos.ResetPasswordRequest;
 import com.api.artezans.users.models.User;
 import com.api.artezans.users.services.UserService;
 import com.api.artezans.utils.ApiResponse;
-import com.api.artezans.utils.TaskHubUtils;
+import com.api.artezans.utils.ArtezanUtils;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -35,7 +35,7 @@ public class UserController {
         Optional<User> user = Optional.ofNullable(userService.findUserByEmail(emailParam.getEmail()));
         String passwordResetUrl = "";
         if (user.isPresent()) {
-            String passwordToken = TaskHubUtils.generateToken(12);
+            String passwordToken = ArtezanUtils.generateToken(12);
             userService.savePasswordResetToken(user, passwordToken);
             sendResetUrl(user.get(), passwordToken);
         }
@@ -52,7 +52,7 @@ public class UserController {
             resetUserPassword(user, passwordResetRequest.getPassword());
             return apiResponse("Password reset successful");
         } else {
-            throw new TaskHubException("Invalid password reset token");
+            throw new ArtezanException("Invalid password reset token");
         }
     }
 
@@ -62,7 +62,7 @@ public class UserController {
         try {
             userService.sendPasswordResetMail(user, url);
         } catch (Exception e) {
-            throw new TaskHubException("Error sending change of password email");
+            throw new ArtezanException("Error sending change of password email");
         }
     }
 

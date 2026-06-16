@@ -4,7 +4,7 @@ import com.api.artezans.customer.data.dto.request.CustomerRegistrationRequest;
 import com.api.artezans.customer.data.dto.request.CustomerUpdateRequest;
 import com.api.artezans.customer.data.model.Customer;
 import com.api.artezans.customer.data.repository.CustomerRepository;
-import com.api.artezans.exceptions.TaskHubException;
+import com.api.artezans.exceptions.ArtezanException;
 import com.api.artezans.exceptions.UserNotFoundException;
 import com.api.artezans.payment.stripe.dto.CreateCustomerRequest;
 import com.api.artezans.payment.stripe.services.StripeService;
@@ -31,8 +31,8 @@ import org.springframework.web.multipart.MultipartFile;
 import java.util.Collections;
 
 import static com.api.artezans.utils.ApiResponse.apiResponse;
-import static com.api.artezans.utils.TaskHubUtils.CUSTOMER;
-import static com.api.artezans.utils.TaskHubUtils.capitalized;
+import static com.api.artezans.utils.ArtezanUtils.CUSTOMER;
+import static com.api.artezans.utils.ArtezanUtils.capitalized;
 
 
 @Slf4j
@@ -71,7 +71,7 @@ public class CustomerServiceImpl implements CustomerService {
             customerRepository.save(customer);
             return apiResponse("Successful! Please check your email to complete registration");
         } catch (RuntimeException ex) {
-            throw new TaskHubException("Registration failed!");
+            throw new ArtezanException("Registration failed!");
         }
     }
 
@@ -85,7 +85,7 @@ public class CustomerServiceImpl implements CustomerService {
         try {
             return stripeService.createCustomer(request);
         } catch (Exception e) {
-            throw new TaskHubException(e.getMessage());
+            throw new ArtezanException(e.getMessage());
         }
     }
 
@@ -140,7 +140,7 @@ public class CustomerServiceImpl implements CustomerService {
             customerRepository.save(updatedCustomer);
             return apiResponse("Updated successfully");
         } catch (JsonPatchException | JsonProcessingException e) {
-            throw new TaskHubException(e.getMessage());
+            throw new ArtezanException(e.getMessage());
         }
     }
 }

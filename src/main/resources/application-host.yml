@@ -4,78 +4,99 @@ spring:
     username: ${DB_USERNAME}
     password: ${DB_PASSWORD}
     driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 2
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
   jpa:
     hibernate:
       ddl-auto: validate
-    database-platform: org.hibernate.dialect.PostgreSQLDialect
-    properties:
-      hibernate:
-        dialect: org.hibernate.dialect.PostgreSQLDialect
-  output:
-    ansi:
-      enabled: always
+    open-in-view: false
   flyway:
     baseline-on-migrate: true
     enabled: true
-    user: ${DB_USERNAME}
-    password: ${DB_PASSWORD}
     baseline-version: 0
     baseline-description: "db_init"
-task:
-  hub:
-    secret:
-      key: ${SECRET_KEY}
+    # Flyway inherits spring.datasource credentials automatically
+  output:
+    ansi:
+      enabled: always
+
+# ── JWT / Security ────────────────────────────────────────────────────────────
+artezans:
+  security:
+    jwt:
+      secret: ${JWT_SECRET}
+
+# ── Token expiry (hours) ──────────────────────────────────────────────────────
+access_expiration: ${ACCESS_EXPIRATION}
+refresh_expiration: ${REFRESH_EXPIRATION}
+
+# ── Application meta ──────────────────────────────────────────────────────────
+app:
+  name: ${APP_NAME}
+  email: ${APP_EMAIL}
+
+frontend_url: ${FRONTEND_URL}
+charges: ${CHARGES}
+
+# ── Brevo (email + SMS) ───────────────────────────────────────────────────────
 sendinblue:
   mail:
-    api_key: ${API_KEY}
+    api_key: ${BREVO_API_KEY}
     url: ${MAIL_URL}
   sms:
     url: ${SMS_URL}
+
+# ── Cloudinary ────────────────────────────────────────────────────────────────
 cloudinary:
   cloud:
     name: ${CLOUDINARY_NAME}
   api:
     secret: ${CLOUDINARY_SECRET}
     key: ${CLOUDINARY_KEY}
-app:
-  name: ${APP_NAME}
-  email: ${APP_EMAIL}
-access_expiration: ${ACCESS_EXPIRATION}
-refresh_expiration: ${REFRESH_EXPIRATION}
+
+# ── Stripe ────────────────────────────────────────────────────────────────────
 stripe:
   api:
-    secretKey: ${SECRET.KEY}
-    publicKey: ${PUBLISH.KEY}
+    secretKey: ${STRIPE_SECRET_KEY}
+    publicKey: ${STRIPE_PUBLIC_KEY}
+
+# ── PayPal ────────────────────────────────────────────────────────────────────
 paypal:
-  mode: ${MODE}
+  mode: ${PAYPAL_MODE}
   client:
-    id: ${ID}
-    secret: ${SECRET}
+    id: ${PAYPAL_CLIENT_ID}
+    secret: ${PAYPAL_CLIENT_SECRET}
+
 success:
-  url: ${SUCCESS}
+  url: ${PAYPAL_SUCCESS_URL}
 cancel:
-  url: ${CANCEL}
-frontend_url: ${FRONTEND_URL}
-charges: ${CHARGES}
-#SWAGGER CONFIGURATION
+  url: ${PAYPAL_CANCEL_URL}
+
+# ── OAuth2 ────────────────────────────────────────────────────────────────────
+oauth2:
+  redirect:
+    uri: ${OAUTH2_REDIRECT_URI}
+
+# ── Swagger / OpenAPI ─────────────────────────────────────────────────────────
 springdoc:
   api-docs:
-    enabled: true  # Enable or disable the generation of OpenAPI documentation
+    enabled: true
+    path: /v3/api-docs
   swagger-ui:
-    path: /swagger-ui.html  # Path to access Swagger UI
-    filter: true  # Enable filtering in Swagger UI
-    tagsSorter: alpha  # Sort tags alphabetically
-    operationsSorter: alpha  # Sort API operations alphabetically
-    doc-expansion: none  # Controls how the API listing is displayed (none, list, full)
-    deep-linking: true  # Enable or disable deep linking for tags and operations
-    display-request-duration: true  # Display the request duration in Swagger UI
-    default-model-rendering: example  # Controls how the model is displayed in Swagger UI (example, model)
-    default-model-expand-depth: 1  # Default model expansion depth
-    show-extensions: true  # Show extensions in the Swagger UI
-    url: /v3/api-docs  # URL of the OpenAPI documentation (used when Swagger UI is served from a different server)
-    display-operation-id: true
-    default-model-tab-index: 1  # Default model tab index
-    show-request-body: always  # Controls when to show the request body (always, never, with_input)
-    show-mutated-request: false  # Show the mutated request instead of the original one
-    show-common-errors: true  # Show common HTTP errors in the response
-    display-query-params-without-oauth2: true  # Display query parameters even if OAuth2 is used
+    path: /swagger-ui.html
+    filter: true
+    tags-sorter: alpha
+    operations-sorter: alpha
+    doc-expansion: none
+    deep-linking: true
+    display-request-duration: true
+    default-models-expand-depth: 1
+    default-model-rendering: example
+    show-extensions: true
+    display-operation-id: false
+    persist-authorization: true
+    try-it-out-enabled: true

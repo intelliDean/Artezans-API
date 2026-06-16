@@ -12,83 +12,147 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.EnableWebMvc;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Map;
+import java.util.List;
 
-@EnableWebMvc
+//@EnableWebMvc
+//@Configuration
+//public class OpenApiConfig {
+//    @Bean
+//    public OpenAPI customOpenAPI() {
+//        return new OpenAPI()
+//                .info(info())
+//                .addSecurityItem(securityRequirement())
+//                .components(components())
+//                .servers(Collections.singletonList(server()));
+//    }
+//
+//    @Bean
+//    public Server server() {
+//        return new Server()
+//                .url("/")
+//                .description("current");
+//    }
+//
+//    private Info info() {
+//        return new Info()
+//                .title("Artezan APIs")
+//                .version("Version 1.00")
+//                .description("This app provides REST APIs documentation for Task Hub")
+//                .contact(contact())
+//                .termsOfService("Terms of service");
+//    }
+//
+//    @Bean
+//    public Contact contact() {
+//        return new Contact()
+//                .name("Artezan support")
+//                .email("info@artezan.com")
+//                .url("https://www.linkedin.com/in/michaeldean8ix/")
+//                .extensions(Map.of(
+//                                "Lead Engineer", "Michael Dean",
+//                                "Phone Number", "+23495729090",
+//                                "Email", "o.michaeldean@gmail.com",
+//                                "LinkedIn", "https://www.linkedin.com/in/michaeldean8ix/"
+//                        )
+//                );
+//    }
+//
+//    @Bean
+//    public SecurityRequirement securityRequirement() {
+//        return new SecurityRequirement()
+//                .addList("Bearer Auth", Arrays.asList("read", "write"));
+//    }
+//
+//    @Bean
+//    public Components components() {
+//        return new Components()
+//                .addSecuritySchemes("Bearer Auth", securityScheme());
+//    }
+//
+//    @Bean
+//    public SecurityScheme securityScheme() {
+//        return new SecurityScheme()
+//                .name("Authorization")
+//                .type(SecurityScheme.Type.HTTP)
+//                .in(SecurityScheme.In.HEADER)
+//                .scheme("bearer")
+//                .bearerFormat("JWT")
+//                .description("Put the JWT Bearer Token in the Authorization header below to get authorized");
+//    }
+//
+//
+//    @Bean
+//    public GroupedOpenApi api() {
+//        String[] paths = {"/api/**"};
+//        return GroupedOpenApi.builder()
+//                .group("api")
+//                .pathsToMatch(paths)
+//                .build();
+//    }
+//}
+
+//@EnableWebMvc
 @Configuration
 public class OpenApiConfig {
+
+    private static final String BEARER_AUTH = "Bearer Auth";
+
     @Bean
     public OpenAPI customOpenAPI() {
         return new OpenAPI()
-                .info(info())
-                .addSecurityItem(securityRequirement())
-                .components(components())
-                .servers(Collections.singletonList(server()));
+                .info(buildInfo())
+                .addSecurityItem(buildSecurityRequirement())
+                .components(buildComponents())
+                .servers(List.of(buildServer()));
     }
 
-    @Bean
-    public Server server() {
+    private Server buildServer() {
         return new Server()
                 .url("/")
-                .description("current");
+                .description("Current environment");
     }
 
-    private Info info() {
+    private Info buildInfo() {
         return new Info()
-                .title("Task Hub APIs")
-                .version("Version 1.00")
-                .description("This app provides REST APIs documentation for Task Hub")
-                .contact(contact())
-                .termsOfService("Terms of service");
+                .title("Artezan APIs")
+                .version("1.0.0")
+                .description("REST API documentation for the Artezan platform")
+                .contact(buildContact())
+                .termsOfService("https://artezan.com/terms");
     }
 
-    @Bean
-    public Contact contact() {
+    private Contact buildContact() {
         return new Contact()
-                .name("Task Hub support")
-                .email("info@taskhub.com")
-                .url("https://www.linkedin.com/in/michaeldean8ix/")
-                .extensions(Map.of(
-                                "Lead Engineer", "Michael Dean",
-                                "Phone Number", "+23495729090",
-                                "Email", "o.michaeldean@gmail.com",
-                                "LinkedIn", "https://www.linkedin.com/in/michaeldean8ix/"
-                        )
-                );
+                .name("Artezan Support — Michael Dean")
+                .email("o.michaeldean@gmail.com")
+                .url("https://www.linkedin.com/in/michaeldean8ix/");
     }
 
-    @Bean
-    public SecurityRequirement securityRequirement() {
+    private SecurityRequirement buildSecurityRequirement() {
         return new SecurityRequirement()
-                .addList("Bearer Auth", Arrays.asList("read", "write"));
+                .addList(BEARER_AUTH);
     }
 
-    @Bean
-    public Components components() {
+    private Components buildComponents() {
         return new Components()
-                .addSecuritySchemes("Bearer Auth", securityScheme());
+                .addSecuritySchemes(BEARER_AUTH, buildSecurityScheme());
     }
 
-    @Bean
-    public SecurityScheme securityScheme() {
+    private SecurityScheme buildSecurityScheme() {
         return new SecurityScheme()
-                .name("Authorization")
+                .name(BEARER_AUTH)
                 .type(SecurityScheme.Type.HTTP)
                 .in(SecurityScheme.In.HEADER)
                 .scheme("bearer")
                 .bearerFormat("JWT")
-                .description("Put the JWT Bearer Token in the Authorization header below to get authorized");
+                .description("Paste your JWT token below — the `Bearer` prefix is added automatically");
     }
 
-
     @Bean
-    public GroupedOpenApi api() {
-        String[] paths = {"/api/**"};
+    public GroupedOpenApi apiGroup() {
         return GroupedOpenApi.builder()
                 .group("api")
-                .pathsToMatch(paths)
+                .pathsToMatch("/api/**")
                 .build();
     }
 }

@@ -3,6 +3,7 @@ package com.api.artezans.config.utils;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
+import org.jspecify.annotations.NonNull;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.web.AuthenticationEntryPoint;
@@ -19,9 +20,11 @@ public class TaskHubAuthEntryPoint implements AuthenticationEntryPoint {
 
     @Override
     public void commence(
-            HttpServletRequest request,
+            @NonNull HttpServletRequest request,
             HttpServletResponse response,
-            AuthenticationException authException) throws IOException {
+            AuthenticationException authException
+    ) throws IOException {
+
         log.error("Unauthorized: {}", authException.getMessage());
 
         if (!response.isCommitted()) {

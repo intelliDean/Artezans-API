@@ -1,18 +1,26 @@
 package com.api.artezans.config.Oauth2;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.springframework.util.SerializationUtils;
+import lombok.extern.slf4j.Slf4j;
 
-import java.util.Base64;
 import java.util.Optional;
 
+/**
+ * Utility helpers for reading, writing, and deleting HTTP cookies.
+ * Serialization uses Jackson (JSON) instead of Java Serialization to avoid
+ * the deserialization security vulnerability in spring SerializationUtils.
+ */
+@Slf4j
 public class CookieUtils {
+
+    private static final ObjectMapper MAPPER = new ObjectMapper();
 
     public static Optional<Cookie> getCookie(HttpServletRequest request, String name) {
         Cookie[] cookies = request.getCookies();
-
         if (cookies != null) {
             for (Cookie cookie : cookies) {
                 if (cookie.getName().equals(name)) {
@@ -20,7 +28,6 @@ public class CookieUtils {
                 }
             }
         }
-
         return Optional.empty();
     }
 
@@ -47,12 +54,20 @@ public class CookieUtils {
     }
 
     public static String serialize(Object object) {
-        return Base64.getUrlEncoder()
-                .encodeToString(SerializationUtils.serialize(object));
+        try {
+            return MAPPER.writeValueAsString(object);
+        } catch (JsonProcessingException e) {
+            log.error("Failed to serialize cookie value", e);
+            return "";
+        }
     }
 
     public static <T> T deserialize(Cookie cookie, Class<T> cls) {
-        return cls.cast(SerializationUtils.deserialize(
-                Base64.getUrlDecoder().decode(cookie.getValue())));
+        try {
+            return MAPPER.readValue(cookie.getValue(), cls);
+        } catch (JsonProcessingException e) {
+            log.error("Failed to deserialize cookie value for class {}", cls.getSimpleName(), e);
+            return null;
+        }
     }
 }

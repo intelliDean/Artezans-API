@@ -3,6 +3,7 @@ package com.api.artezans.users.models;
 import com.api.artezans.notifications.app_notification.model.AppNotification;
 import com.api.artezans.users.models.enums.AccountState;
 import com.api.artezans.users.models.enums.Role;
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.datatype.jsr310.deser.LocalDateTimeDeserializer;
@@ -11,6 +12,7 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.Pattern;
 import lombok.*;
 import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 import org.springframework.validation.annotation.Validated;
 
 import java.time.LocalDate;
@@ -20,8 +22,8 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
-import static com.api.artezans.utils.TaskHubUtils.NUMBER_MESSAGE;
-import static com.api.artezans.utils.TaskHubUtils.VALID_NUMBER;
+import static com.api.artezans.utils.ArtezanUtils.NUMBER_MESSAGE;
+import static com.api.artezans.utils.ArtezanUtils.VALID_NUMBER;
 import static jakarta.persistence.CascadeType.ALL;
 import static jakarta.persistence.FetchType.EAGER;
 import static jakarta.persistence.FetchType.LAZY;
@@ -34,6 +36,7 @@ import static jakarta.persistence.GenerationType.IDENTITY;
 @Validated
 @NoArgsConstructor
 @AllArgsConstructor
+@EntityListeners(AuditingEntityListener.class)
 @Table(name = "users")
 public class User {
 
@@ -72,9 +75,11 @@ public class User {
     private LocalDate deactivatedAt;
 
     @CreatedDate
+    @Column(nullable = false, updatable = false)
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd-MM-yyyy")
     @JsonSerialize(using = LocalDateTimeSerializer.class)
     @JsonDeserialize(using = LocalDateTimeDeserializer.class)
-    private final LocalDateTime registeredAt = LocalDateTime.now();
+    private LocalDateTime registeredAt;
 
     @Enumerated(EnumType.STRING)
     private Set<Role> roles;

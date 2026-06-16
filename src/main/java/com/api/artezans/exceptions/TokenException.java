@@ -1,6 +1,6 @@
 package com.api.artezans.exceptions;
 
-public class TokenException extends TaskHubException{
+public class TokenException extends ArtezanException {
     public TokenException(String message){
         super(message);
     }

@@ -3,11 +3,12 @@ package com.api.artezans.gateway.authentication;
 import com.api.artezans.authentication.dtos.AuthRequest;
 import com.api.artezans.authentication.dtos.AuthResponse;
 import com.api.artezans.authentication.services.AuthService;
-import com.api.artezans.exceptions.TaskHubException;
+import com.api.artezans.exceptions.ArtezanException;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -31,7 +32,7 @@ public class AuthenticationGateway {
 
     @PostMapping("login")
     @Operation(summary = LOGIN_SUMMARY, description = LOGIN_DESCRIPTION, operationId = LOGIN_OP_ID)
-    public ResponseEntity<AuthResponse> login(@RequestBody AuthRequest authRequest) {
+    public ResponseEntity<AuthResponse> login(@RequestBody @Valid AuthRequest authRequest) {
         return ResponseEntity.ok(
                 authenticationService.authenticateAndGetToken(authRequest)
         );
@@ -43,7 +44,7 @@ public class AuthenticationGateway {
         try {
             authenticationService.logout(request, response);
         } catch (IOException e) {
-            throw new TaskHubException();
+            throw new ArtezanException();
         }
     }
 
@@ -53,7 +54,7 @@ public class AuthenticationGateway {
         try {
             authenticationService.refreshToken(request, response);
         } catch (IOException e) {
-            throw new TaskHubException();
+            throw new ArtezanException();
         }
     }
 }

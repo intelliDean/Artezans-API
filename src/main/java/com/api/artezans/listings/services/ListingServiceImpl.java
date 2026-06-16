@@ -1,6 +1,6 @@
 package com.api.artezans.listings.services;
 
-import com.api.artezans.exceptions.TaskHubException;
+import com.api.artezans.exceptions.ArtezanException;
 import com.api.artezans.exceptions.UserNotAuthorizedException;
 import com.api.artezans.listings.data.dtos.ListingRequest;
 import com.api.artezans.listings.data.dtos.LocationFilter;
@@ -22,8 +22,7 @@ import com.github.fge.jsonpatch.JsonPatchException;
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.modelmapper.ModelMapper;
-import org.modelmapper.TypeToken;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
@@ -32,13 +31,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.lang.reflect.Type;
+
 import java.math.BigDecimal;
 import java.time.LocalTime;
 import java.util.List;
 
 import static com.api.artezans.utils.ApiResponse.apiResponse;
-import static com.api.artezans.utils.TaskHubUtils.*;
+import static com.api.artezans.utils.ArtezanUtils.*;
 
 @Slf4j
 @Service
@@ -49,7 +48,6 @@ public class ListingServiceImpl implements ListingService {
     private final ListingRepository listingRepository;
     private final StripeService stripeService;
     private final ObjectMapper objectMapper;
-    private final ModelMapper modelMapper;
 
     @Override
     @Transactional(propagation = Propagation.REQUIRED)
@@ -102,7 +100,7 @@ public class ListingServiceImpl implements ListingService {
                 request.getCloseMinute()
         );
         if (availableFrom.isAfter(availableTo)) {
-            throw new TaskHubException("Time is incoherent");
+            throw new ArtezanException("Time is incoherent");
         }
         return new Timing(availableFrom, availableTo);
     }
@@ -140,9 +138,7 @@ public class ListingServiceImpl implements ListingService {
                         MAX_PER_PAGE
                 )
         );
-        Type paginatedListings = new TypeToken<Paginate<Listing>>() {
-        }.getType();
-        return modelMapper.map(listings, paginatedListings);
+        return Paginate.fromPage(listings);
     }
 
 
@@ -156,9 +152,7 @@ public class ListingServiceImpl implements ListingService {
         );
         Page<Listing> listings =
                 new PageImpl<>(serviceProviderListings, pageable, serviceProviderListings.size());
-        Type paginatedListings = new TypeToken<Paginate<Listing>>() {
-        }.getType();
-        return modelMapper.map(listings, paginatedListings);
+        return Paginate.fromPage(listings);
     }
 
     @Override
@@ -168,9 +162,7 @@ public class ListingServiceImpl implements ListingService {
         Page<Listing> listings = new PageImpl<>(
                 undeletedListings, pageable, undeletedListings.size()
         );
-        Type paginatedListings = new TypeToken<Paginate<Listing>>() {
-        }.getType();
-        return modelMapper.map(listings, paginatedListings);
+        return Paginate.fromPage(listings);
     }
 
     @Override
@@ -196,13 +188,13 @@ public class ListingServiceImpl implements ListingService {
     @Override
     public Listing userFindsListingById(Long listingId) {
         return listingRepository.findActiveListingById(listingId)
-                .orElseThrow(() -> new TaskHubException("Listing does not exist"));
+                .orElseThrow(() -> new ArtezanException("Listing does not exist"));
     }
 
     @Override
     public Listing adminFindsListingById(Long listingId) {
         return listingRepository.findById(listingId)
-                .orElseThrow(() -> new TaskHubException("Listing does not exist"));
+                .orElseThrow(() -> new ArtezanException("Listing does not exist"));
     }
 
     @Override
@@ -225,7 +217,7 @@ public class ListingServiceImpl implements ListingService {
     @Override
     public ApiResponse findServicesFilterByLocation(LocationFilter filterBy) {
         List<Listing> listings = listingRepository.findByLocation(filterBy.getServiceName(), filterBy.getLocation());
-        if (listings.isEmpty()) throw new TaskHubException(NO_LISTINGS);
+        if (listings.isEmpty()) throw new ArtezanException(NO_LISTINGS);
 
         StringBuilder stringBuilder = new StringBuilder();
         stringBuilder.append("These are the services found, when filtered by ").append(filterBy.getServiceName());
@@ -245,7 +237,7 @@ public class ListingServiceImpl implements ListingService {
     public ApiResponse findByServiceNameAndAddressState(String serviceName, String location) {
         List<Listing> listings = listingRepository.findByLocation(serviceName, location);
         if (listings.isEmpty()) {
-            throw new TaskHubException(NO_LISTINGS);
+            throw new ArtezanException(NO_LISTINGS);
         }
 
         StringBuilder stringBuilder = new StringBuilder();
@@ -259,7 +251,7 @@ public class ListingServiceImpl implements ListingService {
 
     private Listing findListingById(Long listingId) {
         return listingRepository.findActiveListingById(listingId)
-                .orElseThrow(() -> new TaskHubException("Listing could not be found"));
+                .orElseThrow(() -> new ArtezanException("Listing could not be found"));
     }
 
     private List<String> uploadBusinessImages(ListingRequest request) {
@@ -270,7 +262,7 @@ public class ListingServiceImpl implements ListingService {
                     multimediaService.upload(request.getImage3())
             );
         } catch (Exception e) {
-            throw new TaskHubException("Error uploading business pictures");
+            throw new ArtezanException("Error uploading business pictures");
         }
     }
 }

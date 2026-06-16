@@ -395,9 +395,9 @@ EXECUTE FUNCTION notification_tsvector_trigger();
 --Add Admin to the database
 INSERT INTO users (id, first_name, last_name, email_address, password, phone_number,
                    is_enabled, account_state, registered_at, roles)
-VALUES (nextVal('users_id_seq'), 'Task', 'Hub', 'info@taskhub.com',
-        '12345', '+61414332523', true, 'VERIFIED',
-        '2023-09-02 12:00:00', ARRAY ['ADMIN']);
+VALUES (nextVal('users_id_seq'), 'One', 'Block', 'oneblockhq@gmail.com',
+        '12345', '+2348095729090', true, 'VERIFIED',
+        '2026-09-02 12:00:00', ARRAY ['ADMIN']);
 
 --Populates category name table
 INSERT INTO category_name(id, name)

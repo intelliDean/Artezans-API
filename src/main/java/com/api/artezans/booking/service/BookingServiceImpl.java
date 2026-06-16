@@ -8,7 +8,7 @@ import com.api.artezans.booking.data.model.enums.AgreementStatus;
 import com.api.artezans.booking.data.model.enums.BookingStage;
 import com.api.artezans.booking.data.model.enums.BookingState;
 import com.api.artezans.booking.data.repository.BookingRepository;
-import com.api.artezans.exceptions.TaskHubException;
+import com.api.artezans.exceptions.ArtezanException;
 import com.api.artezans.listings.data.enums.AvailableDays;
 import com.api.artezans.listings.data.models.Listing;
 import com.api.artezans.listings.services.ListingService;
@@ -45,8 +45,8 @@ import static com.api.artezans.booking.data.model.enums.BookingStage.PAID;
 import static com.api.artezans.booking.data.model.enums.BookingState.COMPLETED;
 import static com.api.artezans.booking.data.model.enums.BookingState.OPEN;
 import static com.api.artezans.utils.ApiResponse.apiResponse;
-import static com.api.artezans.utils.TaskHubUtils.ACCEPTED;
-import static com.api.artezans.utils.TaskHubUtils.REJECTED;
+import static com.api.artezans.utils.ArtezanUtils.ACCEPTED;
+import static com.api.artezans.utils.ArtezanUtils.REJECTED;
 import static org.springframework.transaction.annotation.Propagation.REQUIRED;
 
 @Slf4j
@@ -72,7 +72,7 @@ public class BookingServiceImpl implements BookingService {
     public ApiResponse bookService(BookingRequest request, User user) {
         LocalTime start = LocalTime.of(request.getBookFrom().getHour(), request.getBookFrom().getMinute());
         LocalTime end = LocalTime.of(request.getBookTo().getHour(), request.getBookTo().getMinute());
-        if (start.isAfter(end)) throw new TaskHubException("Time is incoherent");
+        if (start.isAfter(end)) throw new ArtezanException("Time is incoherent");
 
         Listing listing = listingService.userFindsListingById(request.getListingId());
         Set<LocalDate> dates = getDates(request.getBookDates(), listing);
@@ -113,13 +113,13 @@ public class BookingServiceImpl implements BookingService {
             bookingRepository.save(booking);
             return apiResponse("Booking Proposal accepted");
         }
-        throw new TaskHubException("Not a proposal");
+        throw new ArtezanException("Not a proposal");
     }
 
     private Booking getBookingById(Long bookingId) {
         return bookingRepository.findById(bookingId)
                 .orElseThrow(() ->
-                        new TaskHubException("Booking could not be found"));
+                        new ArtezanException("Booking could not be found"));
     }
 
     @Override
@@ -134,7 +134,7 @@ public class BookingServiceImpl implements BookingService {
             bookingRepository.save(booking);
             return apiResponse("Booking proposal rejected");
         }
-        throw new TaskHubException("Booking proposal rejected");
+        throw new ArtezanException("Booking proposal rejected");
     }
 
     @Override
@@ -150,7 +150,7 @@ public class BookingServiceImpl implements BookingService {
             return apiResponse("Service provider delivered service");
         }
 //        booking.setBookingStage(PAID);
-        throw new TaskHubException("Task is either not an open booking or the booking is not yet paid for");
+        throw new ArtezanException("Task is either not an open booking or the booking is not yet paid for");
     }
 
     private void notifyCustomer(Booking booking) {
@@ -201,7 +201,7 @@ public class BookingServiceImpl implements BookingService {
                     .build();
             return stripeService.createPaymentIntent(intentRequest);
         }
-        throw new TaskHubException("Unauthorized: Booking not accepted or invalid user");
+        throw new ArtezanException("Unauthorized: Booking not accepted or invalid user");
     }
 
     @Override
@@ -218,10 +218,10 @@ public class BookingServiceImpl implements BookingService {
                 String approvalUrl = paypalService.authorizePayment(orderDetail, cancelUrl, successUrl);
                 return apiResponse(approvalUrl, "Payment authorized successfully");
             } catch (PayPalRESTException e) {
-                throw new TaskHubException(e.getMessage());
+                throw new ArtezanException(e.getMessage());
             }
         }
-        throw new TaskHubException("Unauthorized: Booking not accepted or invalid user");
+        throw new ArtezanException("Unauthorized: Booking not accepted or invalid user");
     }
 
     @Override
@@ -229,7 +229,7 @@ public class BookingServiceImpl implements BookingService {
         try {
             return paypalService.executePayment(paymentId, payerId);
         } catch (PayPalRESTException e) {
-            throw new TaskHubException(e.getMessage());
+            throw new ArtezanException(e.getMessage());
         }
     }
 
@@ -263,7 +263,7 @@ public class BookingServiceImpl implements BookingService {
             return apiResponse("Accept service successfully");
         } else {
             if (booking.getBookingAgreement().getAgreementStatus().equals(AgreementStatus.ACCEPTED))
-                throw new TaskHubException("Service already accepted and deal closed");
+                throw new ArtezanException("Service already accepted and deal closed");
             else {
                 booking.getBookingAgreement().setAgreementStatus(AgreementStatus.ACCEPTED)
                         .setMessage("Service is accepted")
@@ -291,12 +291,12 @@ public class BookingServiceImpl implements BookingService {
                 sendMailToServiceProvider(booking, "reject_service", " Service Rejected");
                 return apiResponse("Reject service successfully");
             }
-            throw new TaskHubException("Service not yet paid for");
+            throw new ArtezanException("Service not yet paid for");
         } else {
             if (booking.getBookingAgreement().getAgreementStatus().equals(AgreementStatus.REJECTED))
-                throw new TaskHubException("Service already rejected");
+                throw new ArtezanException("Service already rejected");
             else if (booking.getBookingAgreement().getAgreementStatus().equals(AgreementStatus.ACCEPTED))
-                throw new TaskHubException("Service already accepted and deal closed");
+                throw new ArtezanException("Service already accepted and deal closed");
             else {
                 if (booking.getBookingStage().equals(PAID)) {
                     booking.getBookingAgreement().setAgreementStatus(AgreementStatus.REJECTED)
@@ -306,7 +306,7 @@ public class BookingServiceImpl implements BookingService {
                     sendMailToServiceProvider(booking, "reject_service", " Service Rejected");
                     return apiResponse("Reject service successfully");
                 }
-                throw new TaskHubException("Service not yet paid for");
+                throw new ArtezanException("Service not yet paid for");
             }
         }
     }
@@ -319,7 +319,7 @@ public class BookingServiceImpl implements BookingService {
             bookingRepository.save(booking);
             return apiResponse("Booking payment status updated");
         } else {
-            throw new TaskHubException("Booking not opened or booking proposal not accepted");
+            throw new ArtezanException("Booking not opened or booking proposal not accepted");
         }
     }
 
@@ -347,7 +347,7 @@ public class BookingServiceImpl implements BookingService {
                     .build();
             return apiResponse(invoiceResponse, "Invoice generated successfully");
         }
-        throw new TaskHubException("Error generating invoice: Service not accepted");
+        throw new ArtezanException("Error generating invoice: Service not accepted");
     }
 
     private BigDecimal calculateTotalAmount(Booking foundBooking) {
@@ -407,7 +407,7 @@ public class BookingServiceImpl implements BookingService {
                     .build();
             mailService.sendMail(request);
         } else {
-            throw new TaskHubException("Unpaid Service");
+            throw new ArtezanException("Unpaid Service");
         }
     }
 
@@ -439,7 +439,7 @@ public class BookingServiceImpl implements BookingService {
         for (LocalDate date : bookingDates) {
             String dayOfTheWeek = date.getDayOfWeek().toString().toLowerCase();
             if (!days.contains(dayOfTheWeek)) {
-                throw new TaskHubException("Service Provider is unavailable on " + dayOfTheWeek.toUpperCase() + "s");
+                throw new ArtezanException("Service Provider is unavailable on " + dayOfTheWeek.toUpperCase() + "s");
             }
             localDates.add(date);
         }

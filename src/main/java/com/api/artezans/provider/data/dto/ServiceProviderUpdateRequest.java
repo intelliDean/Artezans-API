@@ -5,7 +5,7 @@ import jakarta.validation.constraints.NotNull;
 import lombok.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import static com.api.artezans.utils.TaskHubUtils.*;
+import static com.api.artezans.utils.ArtezanUtils.*;
 
 @Setter
 @Getter

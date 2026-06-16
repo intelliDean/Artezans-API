@@ -15,7 +15,7 @@ import org.springframework.util.StringUtils;
 import java.io.IOException;
 
 import static com.api.artezans.utils.ApiResponse.apiResponse;
-import static com.api.artezans.utils.TaskHubUtils.BEARER;
+import static com.api.artezans.utils.ArtezanUtils.BEARER;
 
 
 @Service

@@ -4,19 +4,19 @@ import lombok.Getter;
 import org.springframework.http.HttpStatus;
 
 @Getter
-public class TaskHubException extends RuntimeException{
+public class ArtezanException extends RuntimeException {
 
     private final HttpStatus status;
 
-    public TaskHubException() {
+    public ArtezanException() {
         this("An error occurred");
     }
 
-    public TaskHubException(String message) {
+    public ArtezanException(String message) {
         this(message, HttpStatus.BAD_REQUEST);
     }
 
-    public TaskHubException(String message, HttpStatus status) {
+    public ArtezanException(String message, HttpStatus status) {
         super(message);
         this.status = status;
     }

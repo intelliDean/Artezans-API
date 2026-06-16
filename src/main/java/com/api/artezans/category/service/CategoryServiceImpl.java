@@ -6,7 +6,7 @@ import com.api.artezans.category.data.model.Category;
 import com.api.artezans.category.data.model.Services;
 import com.api.artezans.category.repository.CategoryRepository;
 import com.api.artezans.category.service.interfaces.CategoryService;
-import com.api.artezans.exceptions.TaskHubException;
+import com.api.artezans.exceptions.ArtezanException;
 import com.api.artezans.users.services.UserService;
 import com.api.artezans.utils.ApiResponse;
 import lombok.AllArgsConstructor;
@@ -19,7 +19,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import static com.api.artezans.utils.ApiResponse.apiResponse;
-import static com.api.artezans.utils.TaskHubUtils.capitalized;
+import static com.api.artezans.utils.ArtezanUtils.capitalized;
 
 
 @Slf4j
@@ -89,7 +89,7 @@ public class CategoryServiceImpl implements CategoryService {
                     .map(Services::getServiceName)
                     .collect(Collectors.toList());
         }
-        throw new TaskHubException("Category does not exist");
+        throw new ArtezanException("Category does not exist");
     }
 
     @Override

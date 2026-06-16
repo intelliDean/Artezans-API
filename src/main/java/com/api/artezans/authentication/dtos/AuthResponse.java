@@ -4,19 +4,28 @@ import com.api.artezans.users.dto.UserDTO;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.*;
 
-@Setter
-@Getter
+//@Setter
+//@Getter
+//@Builder
+//@AllArgsConstructor
+//@NoArgsConstructor
+//@JsonInclude(JsonInclude.Include.NON_EMPTY)
+//public class AuthResponse {
+//
+//    private UserDTO user;
+//
+//    private String accessToken;
+//
+//    private String refreshToken;
+//
+//    private String message;
+//}
+
 @Builder
-@AllArgsConstructor
-@NoArgsConstructor
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class AuthResponse {
-
-    private UserDTO user;
-
-    private String accessToken;
-
-    private String refreshToken;
-
-    private String message;
-}
+public record AuthResponse(
+        UserDTO user,
+        String accessToken,
+        String refreshToken,
+        String message
+) {}

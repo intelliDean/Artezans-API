@@ -2,7 +2,7 @@ package com.api.artezans.provider.service;
 
 import com.api.artezans.authentication.services.AuthService;
 import com.api.artezans.config.security.SecuredUser;
-import com.api.artezans.exceptions.TaskHubException;
+import com.api.artezans.exceptions.ArtezanException;
 import com.api.artezans.exceptions.UserNotFoundException;
 import com.api.artezans.listings.data.models.Listing;
 import com.api.artezans.listings.services.ServiceProviderListingService;
@@ -47,8 +47,8 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import static com.api.artezans.utils.ApiResponse.apiResponse;
-import static com.api.artezans.utils.TaskHubUtils.SERVICE_PROVIDER;
-import static com.api.artezans.utils.TaskHubUtils.capitalized;
+import static com.api.artezans.utils.ArtezanUtils.SERVICE_PROVIDER;
+import static com.api.artezans.utils.ArtezanUtils.capitalized;
 
 @Slf4j
 @Service
@@ -101,7 +101,7 @@ public class ServiceProviderServiceImpl implements ServiceProviderService {
             serviceProviderRepository.save(serviceProvider);
             return apiResponse("Successful! Please check your email to complete registration");
         } catch (RuntimeException ex) {
-            throw new TaskHubException("Registration failed");
+            throw new ArtezanException("Registration failed");
         }
     }
 
@@ -166,11 +166,11 @@ public class ServiceProviderServiceImpl implements ServiceProviderService {
             try {
                 userIdentity.setIdImage(multimediaService.upload(updateRequest.getIdImage()));
             } catch (Exception e) {
-                throw new TaskHubException("an error occurred uploading your ID Image");
+                throw new ArtezanException("an error occurred uploading your ID Image");
             }
             return userIdentity;
         }
-        throw new TaskHubException("Id Number cannot be blank or empty");
+        throw new ArtezanException("Id Number cannot be blank or empty");
     }
 
     private IdType getIdType(String idType) {
@@ -188,12 +188,12 @@ public class ServiceProviderServiceImpl implements ServiceProviderService {
             ServiceProvider serviceProvider, ServiceProviderUpdateRequest updateRequest) {
         UserIdentity userIdentity = userIdentityRepository.findByIdNumber(
                         serviceProvider.getUserIdentity().getIdNumber())
-                .orElseThrow(TaskHubException::new);
+                .orElseThrow(ArtezanException::new);
         userIdentity.setIdType(getIdType(updateRequest.getIdType()));
         try {
             userIdentity.setIdImage(multimediaService.upload(updateRequest.getIdImage()));
         } catch (Exception e) {
-            throw new TaskHubException("an error occurred uploading your ID Image");
+            throw new ArtezanException("an error occurred uploading your ID Image");
         }
         return userIdentity;
     }
@@ -229,7 +229,7 @@ public class ServiceProviderServiceImpl implements ServiceProviderService {
             serviceProviderRepository.save(updatedServiceProvider);
             return apiResponse("Updated successfully");
         } catch (JsonPatchException | JsonProcessingException e) {
-            throw new TaskHubException(e.getMessage());
+            throw new ArtezanException(e.getMessage());
         }
     }
 
@@ -269,7 +269,7 @@ public class ServiceProviderServiceImpl implements ServiceProviderService {
                     .getPrincipal();
             return securedUser.getUser();
         } catch (Exception e) {
-            throw new TaskHubException("User not authenticated");
+            throw new ArtezanException("User not authenticated");
         }
     }
 }

@@ -1,6 +1,6 @@
 package com.api.artezans.password.services;
 
-import com.api.artezans.exceptions.TaskHubException;
+import com.api.artezans.exceptions.ArtezanException;
 import com.api.artezans.notifications.mail.MailService;
 import com.api.artezans.notifications.mail.dto.EmailRequest;
 import com.api.artezans.notifications.mail.dto.MailInfo;
@@ -25,7 +25,7 @@ import java.util.Collections;
 import java.util.List;
 
 import static com.api.artezans.utils.ApiResponse.apiResponse;
-import static com.api.artezans.utils.TaskHubUtils.generateToken;
+import static com.api.artezans.utils.ArtezanUtils.generateToken;
 import static org.springframework.transaction.annotation.Propagation.REQUIRED;
 
 @Service
@@ -54,14 +54,14 @@ public class ChangePasswordServiceImpl implements ChangePasswordService {
         try {
             mailService.sendMail(emailRequest);
         } catch (Exception e) {
-            throw new TaskHubException("Error sending change of password mail");
+            throw new ArtezanException("Error sending change of password mail");
         }
         return apiResponse("Successful! Change of password mail has been sent to your email");
     }
 
     private static void unauthorized(boolean isTrue, String message) {
         if (isTrue) {
-            throw new TaskHubException(message);
+            throw new ArtezanException(message);
         }
     }
 
@@ -123,10 +123,10 @@ public class ChangePasswordServiceImpl implements ChangePasswordService {
     @NotNull
     private ChangePasswordToken getAndValidateToken(String token) {
         ChangePasswordToken changePasswordToken = changePasswordTokenRepository.findByToken(token)
-                .orElseThrow(() -> new TaskHubException("Could not find change password token"));
+                .orElseThrow(() -> new ArtezanException("Could not find change password token"));
         changePasswordToken.checkTokenExpiration();
         if (changePasswordToken.isExpired()) {
-            throw new TaskHubException("Change password token expired");
+            throw new ArtezanException("Change password token expired");
         }
         return changePasswordToken;
     }

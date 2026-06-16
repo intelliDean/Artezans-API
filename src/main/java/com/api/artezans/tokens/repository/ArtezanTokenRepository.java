@@ -9,7 +9,7 @@ import java.util.List;
 import java.util.Optional;
 
 @Repository
-public interface TaskHubTokenRepository extends JpaRepository<TaskHubToken, Long> {
+public interface ArtezanTokenRepository extends JpaRepository<TaskHubToken, Long> {
     @Query("""
             select token from TaskHubToken token
             where token.accessToken = :anyToken or token.refreshToken = :anyToken and token.revoked = false

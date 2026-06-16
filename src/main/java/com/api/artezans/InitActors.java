@@ -3,6 +3,7 @@ package com.api.artezans;
 import com.api.artezans.booking.data.repository.BookingRepository;
 import com.api.artezans.customer.data.model.Customer;
 import com.api.artezans.customer.data.repository.CustomerRepository;
+import com.api.artezans.exceptions.UserNotFoundException;
 import com.api.artezans.provider.data.model.ServiceProvider;
 import com.api.artezans.provider.data.repository.ServiceProviderRepository;
 import com.api.artezans.users.models.Address;
@@ -32,15 +33,25 @@ public class InitActors {
 
 
     @PostConstruct
-    private void creatAdmin() {
-        final String adminEmail = "info@taskhub.com";
+    private void updateAdminPassword() {
+        final String adminEmail = "oneblockhq@gmail.com";
+
+        if (userRepository.findUserByEmailAddressIgnoreCase(adminEmail).isEmpty()) {
+            throw new UserNotFoundException("Admin not found");
+        }
+
         User user = userRepository.findUserByEmailAddressIgnoreCase(adminEmail).get();
+
         if (!passwordEncoder.matches("12345", user.getPassword())) {
             user.setPassword(passwordEncoder.encode("12345"));
             user.setAddress(getAddress());
             userRepository.save(user);
-            log.info("<<<>Admin password changed<>>>");
+            log.info("<<<>Admin password encoded<>>>");
         }
+
+
+        
+
 
     }
 
@@ -55,7 +66,7 @@ public class InitActors {
                             .emailAddress(customerEmail)
                             .address(getAddress())
                             .password(passwordEncoder.encode("@Bean1234"))
-                            .phoneNumber("+61414332523")
+                            .phoneNumber("08064332523")
                             .isEnabled(true)
                             .accountState(AccountState.VERIFIED)
                             .roles(Collections.singleton(Role.CUSTOMER))
@@ -70,9 +81,9 @@ public class InitActors {
         return Address.builder()
                 .unitNumber("5")
                 .streetNumber("12")
-                .streetName("Alvin")
-                .suburb("Logan")
-                .state("Olvan")
+                .streetName("Lekki Phase 1")
+                .suburb("Lekki")
+                .state("Lagos")
                 .postCode("219003")
                 .build();
     }
@@ -90,7 +101,7 @@ public class InitActors {
                                     .address(getAddress())
                                     .emailAddress(serviceProviderEmail)
                                     .password(passwordEncoder.encode("@Bean1234"))
-                                    .phoneNumber("+61414332523")
+                                    .phoneNumber("+2347165332523")
                                     .isEnabled(true)
                                     .accountState(AccountState.VERIFIED)
                                     .roles(Collections.singleton(Role.SERVICE_PROVIDER))

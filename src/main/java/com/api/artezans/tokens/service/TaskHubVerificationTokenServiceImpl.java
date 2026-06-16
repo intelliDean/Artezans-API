@@ -1,7 +1,7 @@
 package com.api.artezans.tokens.service;
 
 
-import com.api.artezans.exceptions.TaskHubException;
+import com.api.artezans.exceptions.ArtezanException;
 import com.api.artezans.tokens.model.TaskHubVerificationToken;
 import com.api.artezans.tokens.repository.TaskHubVerificationTokenRepository;
 import com.api.artezans.tokens.service.interfaces.TaskHubVerificationTokenService;
@@ -39,13 +39,13 @@ public class TaskHubVerificationTokenServiceImpl implements TaskHubVerificationT
     @Override
     public TaskHubVerificationToken findByTokenAndEmail(String token, String email) {
         return taskHubVerificationTokenRepository.findValidVerificationTokenByTokenAndEmail(token, email)
-                .orElseThrow(() -> new TaskHubException("Token could not be found"));
+                .orElseThrow(() -> new ArtezanException("Token could not be found"));
     }
 
     @Override
     public TaskHubVerificationToken findByToken(String token) {
         return taskHubVerificationTokenRepository.findValidVerificationTokenByToken(token)
-                .orElseThrow(() -> new TaskHubException("Token could not be found"));
+                .orElseThrow(() -> new ArtezanException("Token could not be found"));
     }
 
     @Override

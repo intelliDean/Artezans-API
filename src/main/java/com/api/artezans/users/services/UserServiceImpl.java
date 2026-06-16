@@ -2,7 +2,7 @@ package com.api.artezans.users.services;
 
 import com.api.artezans.config.security.JwtService;
 import com.api.artezans.config.security.SecuredUser;
-import com.api.artezans.exceptions.TaskHubException;
+import com.api.artezans.exceptions.ArtezanException;
 import com.api.artezans.exceptions.TokenException;
 import com.api.artezans.exceptions.UserNotFoundException;
 import com.api.artezans.multimedia.MultimediaService;
@@ -16,7 +16,7 @@ import com.api.artezans.users.models.User;
 import com.api.artezans.users.models.enums.AccountState;
 import com.api.artezans.users.repository.UserRepository;
 import com.api.artezans.utils.ApiResponse;
-import com.api.artezans.utils.TaskHubUtils;
+import com.api.artezans.utils.ArtezanUtils;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -42,7 +42,7 @@ import java.util.Collections;
 import java.util.Optional;
 
 import static com.api.artezans.utils.ApiResponse.apiResponse;
-import static com.api.artezans.utils.TaskHubUtils.*;
+import static com.api.artezans.utils.ArtezanUtils.*;
 
 
 @Slf4j
@@ -70,7 +70,7 @@ public class UserServiceImpl implements UserService {
     @Override
     public void validateExistence(String email) {
         if (userRepository.existsByEmailAddress(email)) {
-            throw new TaskHubException("User with email " + email + " already exists");
+            throw new ArtezanException("User with email " + email + " already exists");
         }
     }
 
@@ -110,7 +110,7 @@ public class UserServiceImpl implements UserService {
         taskHubVerificationTokenService.saveToken(verificationToken);
 
         String hashedEmail = new BCryptPasswordEncoder().encode(email);
-        return TaskHubUtils.getUrl(hashedEmail, token, url);
+        return ArtezanUtils.getUrl(hashedEmail, token, url);
     }
 
 
@@ -150,7 +150,7 @@ public class UserServiceImpl implements UserService {
                     .getPrincipal();
             return securedUser.getUser();
         } catch (Exception e) {
-            throw new TaskHubException("User not authenticated");
+            throw new ArtezanException("User not authenticated");
         }
     }
 
@@ -171,7 +171,7 @@ public class UserServiceImpl implements UserService {
             //       taskHubVerificationTokenService.saveToken(taskHubVerificationToken);
             return apiResponse("Your email is verified successfully. Please proceed to login");
         } else {
-            throw new TaskHubException("Verification failed!");
+            throw new ArtezanException("Verification failed!");
         }
     }
 
@@ -181,7 +181,7 @@ public class UserServiceImpl implements UserService {
         try {
             imageUrl = multimediaService.upload(image);
         } catch (Exception ex) {
-            throw new TaskHubException(ex.getMessage());
+            throw new ArtezanException(ex.getMessage());
         }
         User user = currentUser();
         user.setProfileImage(imageUrl);
@@ -253,11 +253,11 @@ public class UserServiceImpl implements UserService {
             try {
                 mailService.sendMail(emailRequest);
             } catch (Exception e) {
-                throw new TaskHubException("Email sending failed");
+                throw new ArtezanException("Email sending failed");
             }
             return apiResponse("Email sent. Please check your inbox");
         }
-        throw new TaskHubException("Unauthorized!");
+        throw new ArtezanException("Unauthorized!");
     }
 
     private String requestUrl(HttpServletRequest request) {
@@ -289,7 +289,7 @@ public class UserServiceImpl implements UserService {
                 }
             }
         } else {
-            throw new TaskHubException("Token has expired");
+            throw new ArtezanException("Token has expired");
         }
     }
 }

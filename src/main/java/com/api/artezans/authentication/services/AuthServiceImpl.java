@@ -3,7 +3,7 @@ package com.api.artezans.authentication.services;
 import com.api.artezans.authentication.dtos.AuthRequest;
 import com.api.artezans.authentication.dtos.AuthResponse;
 import com.api.artezans.config.security.JwtService;
-import com.api.artezans.exceptions.TaskHubException;
+import com.api.artezans.exceptions.ArtezanException;
 import com.api.artezans.tokens.model.TaskHubToken;
 import com.api.artezans.tokens.model.TaskHubVerificationToken;
 import com.api.artezans.tokens.service.interfaces.TaskHubTokenService;
@@ -12,7 +12,7 @@ import com.api.artezans.users.dto.UserDTO;
 import com.api.artezans.users.models.User;
 import com.api.artezans.users.models.enums.AccountState;
 import com.api.artezans.users.services.UserService;
-import com.api.artezans.utils.TaskHubUtils;
+import com.api.artezans.utils.ArtezanUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -31,8 +31,8 @@ import java.io.IOException;
 import java.time.Duration;
 import java.time.LocalDateTime;
 
-import static com.api.artezans.utils.TaskHubUtils.BEARER;
-import static com.api.artezans.utils.TaskHubUtils.DEACTIVATED;
+import static com.api.artezans.utils.ArtezanUtils.BEARER;
+import static com.api.artezans.utils.ArtezanUtils.DEACTIVATED;
 import static org.springframework.http.HttpHeaders.AUTHORIZATION;
 import static org.springframework.transaction.annotation.Propagation.REQUIRED;
 
@@ -54,7 +54,7 @@ public class AuthServiceImpl implements AuthService {
     @Override
     @Transactional(propagation = REQUIRED)
     public AuthResponse authenticateAndGetToken(AuthRequest authRequest) {
-       final User user = userService.findUserByEmail(authRequest.getEmailAddress());
+       final User user = userService.findUserByEmail(authRequest.emailAddress());
 
         if (user.getAccountState().equals(AccountState.NOT_VERIFIED)) {
             unverifiedUserEmailAddress(user);
@@ -65,7 +65,7 @@ public class AuthServiceImpl implements AuthService {
         } else if (user.getAccountState().equals(AccountState.VERIFIED)) {
             return login(authRequest, user);
         }
-        throw new TaskHubException("Unusual error logging in");
+        throw new ArtezanException("Unusual error logging in");
     }
 
 
@@ -74,13 +74,13 @@ public class AuthServiceImpl implements AuthService {
         try {
             Authentication authentication = authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(
-                            authRequest.getEmailAddress(),
-                            authRequest.getPassword())
+                            authRequest.emailAddress(),
+                            authRequest.password())
             );
             if (authentication.isAuthenticated()) {
                 tokens = jwtService.generateToken(authentication);
                 saveTokenToDatabase(user, tokens);
-            } else throw new TaskHubException("Authentication failed");
+            } else throw new ArtezanException("Authentication failed");
             return AuthResponse.builder()
                     .user(new UserDTO(user))
                     .message("Authentication successful")
@@ -88,7 +88,7 @@ public class AuthServiceImpl implements AuthService {
                     .refreshToken(tokens.refreshToken())
                     .build();
         } catch (Exception ex) {
-            throw new TaskHubException(ex.getMessage());
+            throw new ArtezanException(ex.getMessage());
         }
     }
 
@@ -107,10 +107,10 @@ public class AuthServiceImpl implements AuthService {
                 taskHubVerificationTokenService.findByEmail(user.getEmailAddress());
         if (verificationToken.isExpired()) {
             updateTokenAndResendVerificationMail(user);
-            throw new TaskHubException("New verification email has been sent to your email address");
+            throw new ArtezanException("New verification email has been sent to your email address");
         } else {
             Duration duration = Duration.between(LocalDateTime.now(), verificationToken.getExpireAt());
-            throw new TaskHubException("Your verification token is still valid for the next " +
+            throw new ArtezanException("Your verification token is still valid for the next " +
                     duration.toMinutes() + " minute(s). Check your registered email to get your email verified");
         }
     }
@@ -118,7 +118,7 @@ public class AuthServiceImpl implements AuthService {
     private void updateTokenAndResendVerificationMail(User user) {
 
         TaskHubVerificationToken token = taskHubVerificationTokenService.findByEmail(user.getEmailAddress());
-        String generatedToken = TaskHubUtils.generateToken(12);
+        String generatedToken = ArtezanUtils.generateToken(12);
         String emailAddress = user.getEmailAddress();
         token.setToken(generatedToken);
         token.setEmailAddress(emailAddress);
@@ -130,7 +130,7 @@ public class AuthServiceImpl implements AuthService {
 
         String preUrl = "%s/auth/activating".formatted(frontendUrl);
         String hashedEmail = new BCryptPasswordEncoder().encode(emailAddress);
-        String url = TaskHubUtils.getUrl(hashedEmail, generatedToken, preUrl);
+        String url = ArtezanUtils.getUrl(hashedEmail, generatedToken, preUrl);
 
         userService.sendMail(user, url);
     }
@@ -154,7 +154,7 @@ public class AuthServiceImpl implements AuthService {
                 final User user = userService.findUserByEmail(email);
                 final String accessToken = jwtService.accessToken(user);
                 final TaskHubToken taskHubToken = taskHubTokenService.getValidTokenByAnyToken(refreshToken)
-                        .orElseThrow(() -> new TaskHubException("Token could not be found"));
+                        .orElseThrow(() -> new ArtezanException("Token could not be found"));
                 taskHubToken.setAccessToken(accessToken);
                 taskHubTokenService.saveToken(taskHubToken);
                 final JwtService.Tokens newTokens = new JwtService.Tokens(accessToken, refreshToken);

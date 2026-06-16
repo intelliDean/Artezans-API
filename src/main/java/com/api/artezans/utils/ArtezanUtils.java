@@ -5,17 +5,17 @@ import jakarta.servlet.http.HttpServletRequest;
 import java.security.SecureRandom;
 import java.util.Base64;
 
-public class TaskHubUtils {
+public class ArtezanUtils {
     public static final String VALID_PASSWORD =
             "^(?=.*[A-Za-z])(?=.*\\d)(?=.*[@#$%!*?^&+=])[A-Za-z\\d@#$%!*?^&+=]{8,}$";
     public static final String PASSWORD_MESSAGE = "Password must contain at least one lowercase letter, " +
             "one uppercase letter, one special character, and is at least 8 characters long without a white space.";
     public static final int MAX_PER_PAGE = 5;
     public static final String BEARER = "Bearer ";
-    public static final String CUSTOMER = "This user is a Customer on Task Hub Platform";
-    public static final String SERVICE_PROVIDER = "This user is a Service Provider on Task Hub Platform";
+    public static final String CUSTOMER = "This user is a customer on Artezan platform";
+    public static final String SERVICE_PROVIDER = "This user is a service provider on Artezan platform";
 
-    public static final String VALID_NUMBER = "^(?:\\+61|0)[2-478][0-9]{8}$";
+    public static final String VALID_NUMBER = "^(?:\\+234|0)[7-9][01][0-9]{8}$";
     public static final String NUMBER_MESSAGE = "Please enter a valid phone number";
     public static final String BEFORE_ONE_MONTH = " Account reactivation is one month after deactivation. " +
             "Check back after one month of deactivation";

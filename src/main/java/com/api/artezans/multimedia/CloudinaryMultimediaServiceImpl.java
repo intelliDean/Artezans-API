@@ -1,6 +1,6 @@
 package com.api.artezans.multimedia;
 
-import com.api.artezans.exceptions.TaskHubException;
+import com.api.artezans.exceptions.ArtezanException;
 import com.cloudinary.Cloudinary;
 import com.cloudinary.utils.ObjectUtils;
 import lombok.AllArgsConstructor;
@@ -24,7 +24,7 @@ public class CloudinaryMultimediaServiceImpl implements MultimediaService {
             Map<?, ?> response = cloudinary.uploader().upload(image.getBytes(), ObjectUtils.emptyMap());
             return response.get("url").toString();
         } catch (IOException ex) {
-            throw new TaskHubException(ex.getMessage());
+            throw new ArtezanException(ex.getMessage());
         }
     }
 }

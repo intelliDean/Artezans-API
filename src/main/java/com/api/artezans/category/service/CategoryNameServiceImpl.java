@@ -5,7 +5,7 @@ import com.api.artezans.category.data.dtos.CategoryNameDto;
 import com.api.artezans.category.data.model.CategoryName;
 import com.api.artezans.category.repository.CategoryNameRepository;
 import com.api.artezans.category.service.interfaces.CategoryNameService;
-import com.api.artezans.exceptions.TaskHubException;
+import com.api.artezans.exceptions.ArtezanException;
 import com.api.artezans.utils.ApiResponse;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -39,7 +39,7 @@ public class CategoryNameServiceImpl implements CategoryNameService {
             categoryNameRepository.saveAll(names);
             return apiResponse("Category name saved successfully");
         }
-        throw new TaskHubException("Already existed");
+        throw new ArtezanException("Already existed");
     }
 
     @Override
@@ -53,7 +53,7 @@ public class CategoryNameServiceImpl implements CategoryNameService {
     public ApiResponse deleteCategoryName(CategoryNameDto categoryName) {
         categoryNameRepository.delete(
                 categoryNameRepository.findByNameIgnoreCase(categoryName.getCategoryName())
-                        .orElseThrow(() -> new TaskHubException("Category name could not be found"))
+                        .orElseThrow(() -> new ArtezanException("Category name could not be found"))
         );
         return apiResponse("Category name deleted successfully");
     }

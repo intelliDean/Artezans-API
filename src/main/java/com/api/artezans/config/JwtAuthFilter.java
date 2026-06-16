@@ -22,7 +22,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 
-import static com.api.artezans.utils.TaskHubUtils.BEARER;
+import static com.api.artezans.utils.ArtezanUtils.BEARER;
 import static org.springframework.http.HttpHeaders.AUTHORIZATION;
 
 @Slf4j

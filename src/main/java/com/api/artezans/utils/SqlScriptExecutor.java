@@ -1,6 +1,6 @@
 package com.api.artezans.utils;
 
-import com.api.artezans.exceptions.TaskHubException;
+import com.api.artezans.exceptions.ArtezanException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.ClassPathResource;
@@ -28,7 +28,7 @@ public class SqlScriptExecutor {
             Connection connection = Objects.requireNonNull(jdbcTemplate.getDataSource()).getConnection();
             ScriptUtils.executeSqlScript(connection, classPathResource);
         } catch (SQLException e) {
-            throw new TaskHubException("invalid script location: " + scriptLocation);
+            throw new ArtezanException("invalid script location: " + scriptLocation);
         }
     }
 }

@@ -2,7 +2,7 @@ package com.api.artezans.exceptions;
 
 import org.springframework.http.HttpStatus;
 
-public class UserNotFoundException extends TaskHubException {
+public class UserNotFoundException extends ArtezanException {
 
     public UserNotFoundException() {
         this("User could not be found");

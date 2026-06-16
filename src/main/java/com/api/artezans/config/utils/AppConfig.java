@@ -4,7 +4,6 @@ import com.cloudinary.Cloudinary;
 import com.cloudinary.utils.ObjectUtils;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
-import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -12,9 +11,6 @@ import org.springframework.web.reactive.function.client.WebClient;
 import org.thymeleaf.context.Context;
 
 import javax.crypto.SecretKey;
-
-import static org.modelmapper.config.Configuration.AccessLevel.PRIVATE;
-import static org.modelmapper.convention.MatchingStrategies.STANDARD;
 
 @Configuration
 public class AppConfig {
@@ -27,20 +23,19 @@ public class AppConfig {
     @Value("${cloudinary.api.key}")
     private String cloudApiKey;
 
-    @Value("${task.hub.secret.key}")
+    @Value("${artezan.security.jwt.secret}")
     private String SECRET;
 
-    @Bean
-    public ModelMapper mapper() {
-        final ModelMapper mapper = new ModelMapper();
-        mapper.getConfiguration()
-                .setFieldMatchingEnabled(true)
-                .setFieldAccessLevel(PRIVATE)
-                .setSkipNullEnabled(true)
-                .setMatchingStrategy(STANDARD);
-        return mapper;
-    }
-
+    // @Bean
+    // public ModelMapper mapper() {
+    // final ModelMapper mapper = new ModelMapper();
+    // mapper.getConfiguration()
+    // .setFieldMatchingEnabled(true)
+    // .setFieldAccessLevel(PRIVATE)
+    // .setSkipNullEnabled(true)
+    // .setMatchingStrategy(STANDARD);
+    // return mapper;
+    // }
 
     @Bean
     public Context context() {

@@ -12,6 +12,7 @@ import java.util.List;
 @Component
 @AllArgsConstructor
 public class TaskController {
+
     private final TaskService taskService;
 
     public ApiResponse postATask(TaskRequest request) {
@@ -25,6 +26,7 @@ public class TaskController {
     public List<Task> adminViewAllTasks(){
         return taskService.adminViewAllTasks();
     }
+
     public ApiResponse deleteTask(Long postId){
         return taskService.deletePost(postId);
     }

@@ -12,6 +12,7 @@ import static com.api.artezans.config.Oauth2.userDetail.OAuth2Constants.REDIRECT
 
 @Component
 public class HttpCookieOAuth2AuthorizationRequestRepository implements AuthorizationRequestRepository<OAuth2AuthorizationRequest> {
+
     private static final int cookieExpireSeconds = 180;
 
     @Override
@@ -41,6 +42,11 @@ public class HttpCookieOAuth2AuthorizationRequestRepository implements Authoriza
 
     @Override
     public OAuth2AuthorizationRequest removeAuthorizationRequest(HttpServletRequest request, HttpServletResponse response) {
-        return this.loadAuthorizationRequest(request);
+        OAuth2AuthorizationRequest authRequest = this.loadAuthorizationRequest(request);
+        if (authRequest != null) {
+            CookieUtils.deleteCookie(request, response, OAUTH2_AUTHORIZATION_REQUEST_COOKIE_NAME);
+            CookieUtils.deleteCookie(request, response, REDIRECT_URI_PARAM_COOKIE_NAME);
+        }
+        return authRequest;
     }
 }

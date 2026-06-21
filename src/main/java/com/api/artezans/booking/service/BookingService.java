@@ -1,6 +1,7 @@
 package com.api.artezans.booking.service;
 
 import com.api.artezans.booking.data.dto.BookingRequest;
+import com.api.artezans.config.security.SecuredUser;
 import com.api.artezans.payment.stripe.dto.Response;
 import com.api.artezans.users.models.User;
 import com.api.artezans.utils.ApiResponse;
@@ -9,7 +10,7 @@ import com.stripe.exception.StripeException;
 
 public interface BookingService {
 
-    ApiResponse bookService(BookingRequest request, User user);
+    ApiResponse bookService(BookingRequest request, SecuredUser user);
 
     ApiResponse acceptProposal(Long bookingId);
 

@@ -2,7 +2,11 @@ package com.api.artezans.config;
 
 import com.api.artezans.config.Oauth2.HttpCookieOAuth2AuthorizationRequestRepository;
 import com.api.artezans.config.Oauth2.OAuth2AuthenticationFailureHandler;
+import com.api.artezans.config.Oauth2.OAuth2AuthenticationSuccessHandler;
+import com.api.artezans.config.Oauth2.userDetail.Oauth2CustomUserService;
+import com.api.artezans.config.utils.ArtezanAccessDeniedHandler;
 import com.api.artezans.config.utils.NoAuth;
+import com.api.artezans.users.models.enums.Role;
 import lombok.AllArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -17,13 +21,13 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.crypto.argon2.Argon2PasswordEncoder;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
-
 
 @Configuration
 @EnableWebSecurity
@@ -33,25 +37,32 @@ public class SecurityConfig implements WebMvcConfigurer {
     private final AuthenticationEntryPoint authenticationEntryPoint;
     private final UserDetailsService userDetailsService;
     private final JwtAuthFilter jwtAuthFilter;
+    private final ArtezanAccessDeniedHandler accessDeniedHandler;
     private final OAuth2AuthenticationFailureHandler oAuth2AuthenticationFailureHandler;
+    private final OAuth2AuthenticationSuccessHandler oAuth2AuthenticationSuccessHandler;
     private final HttpCookieOAuth2AuthorizationRequestRepository httpCookieOAuth2AuthorizationRequestRepository;
+    private final Oauth2CustomUserService oauth2CustomUserService;
 
 
     @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-        http.csrf(AbstractHttpConfigurer::disable)
-                .exceptionHandling(exception ->
-                        exception.authenticationEntryPoint(authenticationEntryPoint))
-                .authorizeHttpRequests(httpRequest ->
-                        httpRequest.requestMatchers(NoAuth.whiteList()).permitAll()
+    public SecurityFilterChain filterChain(HttpSecurity http) {
+        return http.csrf(AbstractHttpConfigurer::disable)
+                .authorizeHttpRequests(
+                        httpRequest -> httpRequest.requestMatchers(NoAuth.whiteList()).permitAll()
                                 .requestMatchers(NoAuth.swagger()).permitAll()
                                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                                .requestMatchers("/api/v1/user/deactivate").authenticated()
-                                .anyRequest().authenticated())
-                .sessionManagement(sessionMgt ->
-                        sessionMgt.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
-        return http.build();
+                                .requestMatchers("/api/v1/user/deactivate").authenticated() //open for all '/api/v1/user' except this
+                                .anyRequest().authenticated()) //anything path aside from the above, make sure it is authenticated
+                .sessionManagement(sessionMgt -> sessionMgt.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .oauth2Login(oauth2 -> oauth2.authorizationEndpoint(authorization -> authorization.authorizationRequestRepository(httpCookieOAuth2AuthorizationRequestRepository))
+                        .userInfoEndpoint(userInfo -> userInfo.userService(oauth2CustomUserService))
+                        .successHandler(oAuth2AuthenticationSuccessHandler)
+                        .failureHandler(oAuth2AuthenticationFailureHandler))
+                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
+                .exceptionHandling(exception -> exception
+                        .authenticationEntryPoint(authenticationEntryPoint)
+                        .accessDeniedHandler(accessDeniedHandler))
+                .build();
     }
 
     /**
@@ -69,8 +80,19 @@ public class SecurityConfig implements WebMvcConfigurer {
     }
 
     @Bean
-    public PasswordEncoder passwordEncoder() {
+    public static PasswordEncoder bCryptPasswordEncoder() {
         return new BCryptPasswordEncoder();
+    }
+
+    @Bean
+    public static PasswordEncoder passwordEncoder() {
+        // return Argon2PasswordEncoder.defaultsForSpringSecurity_v5_8();
+        return new Argon2PasswordEncoder(
+                16,
+                32,
+                1,
+                65536,
+                4);
     }
 
     @Bean

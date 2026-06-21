@@ -18,6 +18,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.Collections;
+import java.util.Optional;
 
 @Slf4j
 @Service
@@ -28,31 +29,29 @@ public class InitActors {
     private final CustomerRepository customerRepository;
     private final BookingRepository bookingRepository;
     private final PasswordEncoder passwordEncoder;
-    private ServiceProvider serviceProvider;
-    private Address address;
+//    private ServiceProvider serviceProvider;
+//    private Address address;
 
 
     @PostConstruct
     private void updateAdminPassword() {
         final String adminEmail = "oneblockhq@gmail.com";
 
-        if (userRepository.findUserByEmailAddressIgnoreCase(adminEmail).isEmpty()) {
+        Optional<User> user = userRepository.findUserByEmailAddressIgnoreCase(adminEmail);
+
+        if (user.isPresent()) {
+
+            User gottenUser = user.get();
+
+            if (!passwordEncoder.matches("@Oneblock12345!", gottenUser.getPassword())) {
+                gottenUser.setPassword(passwordEncoder.encode("@Oneblock12345!"));
+                gottenUser.setAddress(getAddress());
+                userRepository.save(gottenUser);
+                log.info("<<<>Admin password encoded<>>>");
+            }
+        } else {
             throw new UserNotFoundException("Admin not found");
         }
-
-        User user = userRepository.findUserByEmailAddressIgnoreCase(adminEmail).get();
-
-        if (!passwordEncoder.matches("12345", user.getPassword())) {
-            user.setPassword(passwordEncoder.encode("12345"));
-            user.setAddress(getAddress());
-            userRepository.save(user);
-            log.info("<<<>Admin password encoded<>>>");
-        }
-
-
-        
-
-
     }
 
     @PostConstruct
@@ -65,9 +64,9 @@ public class InitActors {
                             .lastName("Charles")
                             .emailAddress(customerEmail)
                             .address(getAddress())
-                            .password(passwordEncoder.encode("@Bean1234"))
+                            .password(passwordEncoder.encode("@Glory12345!"))
                             .phoneNumber("08064332523")
-                            .isEnabled(true)
+                            .enabled(true)
                             .accountState(AccountState.VERIFIED)
                             .roles(Collections.singleton(Role.CUSTOMER))
                             .build())
@@ -100,9 +99,9 @@ public class InitActors {
                                     .lastName("Osinachi")
                                     .address(getAddress())
                                     .emailAddress(serviceProviderEmail)
-                                    .password(passwordEncoder.encode("@Bean1234"))
+                                    .password(passwordEncoder.encode("@Chiamaka12345!"))
                                     .phoneNumber("+2347165332523")
-                                    .isEnabled(true)
+                                    .enabled(true)
                                     .accountState(AccountState.VERIFIED)
                                     .roles(Collections.singleton(Role.SERVICE_PROVIDER))
                                     .build())

@@ -30,9 +30,9 @@ public class CategoryNameServiceImpl implements CategoryNameService {
     public ApiResponse addCategoryName(List<CategoryNameDto> categoryNameDtos) {
         List<CategoryName> names = categoryNameDtos.stream()
                 .filter(categoryNameDto ->
-                        !categoryNameRepository.existsByNameIgnoreCase(categoryNameDto.getCategoryName()))
+                        !categoryNameRepository.existsByNameIgnoreCase(categoryNameDto.categoryName()))
                 .map(categoryNameDto -> CategoryName.builder()
-                        .name(categoryNameDto.getCategoryName().toUpperCase())
+                        .name(categoryNameDto.categoryName().toUpperCase())
                         .build())
                 .toList();
         if (!names.isEmpty()) {
@@ -52,7 +52,7 @@ public class CategoryNameServiceImpl implements CategoryNameService {
     @Override
     public ApiResponse deleteCategoryName(CategoryNameDto categoryName) {
         categoryNameRepository.delete(
-                categoryNameRepository.findByNameIgnoreCase(categoryName.getCategoryName())
+                categoryNameRepository.findByNameIgnoreCase(categoryName.categoryName())
                         .orElseThrow(() -> new ArtezanException("Category name could not be found"))
         );
         return apiResponse("Category name deleted successfully");

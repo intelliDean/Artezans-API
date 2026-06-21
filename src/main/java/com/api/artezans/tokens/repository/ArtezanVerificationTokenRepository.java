@@ -1,40 +1,40 @@
 package com.api.artezans.tokens.repository;
 
-import com.api.artezans.tokens.model.TaskHubVerificationToken;
+import com.api.artezans.tokens.model.ArtezanVerificationToken;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.Optional;
+
 @Repository
-public interface TaskHubVerificationTokenRepository extends JpaRepository<TaskHubVerificationToken, Long> {
+public interface ArtezanVerificationTokenRepository extends JpaRepository<ArtezanVerificationToken, Long> {
     @Query("""
-            select verificationToken from TaskHubVerificationToken verificationToken
+            select verificationToken from ArtezanVerificationToken verificationToken
             where verificationToken.token = :token and verificationToken.emailAddress = :email
             and verificationToken.revoked = false and verificationToken.expired = false
             """)
-    Optional<TaskHubVerificationToken> findValidVerificationTokenByTokenAndEmail(String token, String email);
+    Optional<ArtezanVerificationToken> findValidVerificationTokenByTokenAndEmail(String token, String email);
 
     @Query("""
-            select verificationToken from TaskHubVerificationToken verificationToken
+            select verificationToken from ArtezanVerificationToken verificationToken
             where verificationToken.token = :token and verificationToken.revoked = false
             and verificationToken.expired = false
             """)
-    Optional<TaskHubVerificationToken> findValidVerificationTokenByToken(String token);
+    Optional<ArtezanVerificationToken> findValidVerificationTokenByToken(String token);
 
     @Query("""
-            select tokens from TaskHubVerificationToken tokens
+            select tokens from ArtezanVerificationToken tokens
             where tokens.revoked = true or tokens.expired = true
             """)
-    List<TaskHubVerificationToken> findAllInvalidTokens();
+    List<ArtezanVerificationToken> findAllInvalidTokens();
 
     @Query("""
-            select token from TaskHubVerificationToken token
+            select token from ArtezanVerificationToken token
             where token.revoked = false and token.expired = false
             """)
-    List<TaskHubVerificationToken> findAllValidTokens();
+    List<ArtezanVerificationToken> findAllValidTokens();
 
-
-    Optional<TaskHubVerificationToken> findByEmailAddress(String emailAddress);
+    Optional<ArtezanVerificationToken> findByEmailAddress(String emailAddress);
 }

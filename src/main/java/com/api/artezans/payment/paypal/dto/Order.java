@@ -4,24 +4,20 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
 
-@Setter
-@Getter
-@Builder
-@AllArgsConstructor
-@NoArgsConstructor
-public class Order {
 
-    @NotBlank
-    @NotNull
-    private Double price;
+public record Order (
 
-    @NotBlank
-    @NotNull
-    private String currency;
+        @NotBlank
+        @NotNull
+        Double price,
 
-    private String method;
+        @NotBlank
+        @NotNull
+        String currency,
 
-    private String intent;
+        String method,
 
-    private String description;
-}
+        String intent,
+
+        String description
+) {}

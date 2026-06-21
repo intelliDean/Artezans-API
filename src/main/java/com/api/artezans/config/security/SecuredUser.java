@@ -1,7 +1,9 @@
 package com.api.artezans.config.security;
 
 import com.api.artezans.users.models.User;
+import com.api.artezans.users.models.enums.Role;
 import lombok.Getter;
+import org.jspecify.annotations.NonNull;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -9,16 +11,38 @@ import org.springframework.security.oauth2.core.user.OAuth2User;
 
 import java.util.Collection;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Getter
 public class SecuredUser implements UserDetails, OAuth2User {
 
     private final User user;
+
+    private final String firstName;
+
+    private final String lastName;
+
+    private final String emailAddress;
+
+    private final String password;
+
+    private final boolean isEnabled;
+
+    private final Set<Role> roles;
+
     private Map<String, Object> attributes;
 
     public SecuredUser(User user) {
+
         this.user = user;
+
+        this.firstName = user.getFirstName();
+        this.lastName = user.getLastName();
+        this.emailAddress = user.getEmailAddress();
+        this.isEnabled = user.isEnabled();
+        this.password = user.getPassword();
+        this.roles = user.getRoles();
     }
 
     public SecuredUser(User user, Map<String, Object> attributes) {
@@ -27,45 +51,30 @@ public class SecuredUser implements UserDetails, OAuth2User {
     }
 
     @Override
-    public Collection<? extends GrantedAuthority> getAuthorities() {
-        return user.getRoles().stream()
+    public @NonNull Collection<? extends GrantedAuthority> getAuthorities() {
+        return roles.stream()
                 .map(role -> new SimpleGrantedAuthority(role.name()))
                 .collect(Collectors.toSet());
     }
 
     @Override
-    public String getUsername() {
-        return user.getEmailAddress();
+    public @NonNull String getUsername() {
+        return emailAddress;
     }
 
     @Override
     public String getPassword() {
-        return user.getPassword();
-    }
-
-    @Override
-    public boolean isAccountNonExpired() {
-        return true;
-    }
-
-    @Override
-    public boolean isAccountNonLocked() {
-        return true;
-    }
-
-    @Override
-    public boolean isCredentialsNonExpired() {
-        return true;
+        return password;
     }
 
     @Override
     public boolean isEnabled() {
-        return user.isEnabled();
+        return isEnabled;
     }
 
     @Override
-    public String getName() {
-        return "%s %s".formatted(user.getFirstName(), user.getLastName());
+    public @NonNull String getName() {
+        return "%s %s".formatted(firstName, lastName);
     }
 
     @Override

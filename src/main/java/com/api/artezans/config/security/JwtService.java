@@ -1,13 +1,15 @@
 package com.api.artezans.config.security;
 
-import com.api.artezans.tokens.service.interfaces.TaskHubTokenService;
+import com.api.artezans.tokens.service.interfaces.ArtezanTokenService;
 import com.api.artezans.users.models.User;
+import com.api.artezans.users.models.enums.Role;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.stereotype.Service;
 
@@ -16,6 +18,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 
@@ -23,7 +26,7 @@ import java.util.function.Function;
 @RequiredArgsConstructor
 public class JwtService {
 
-    private final TaskHubTokenService taskHubTokenService;
+    private final ArtezanTokenService artezanTokenService;
     private final SecretKey secretKey;
 
     @Value("${access_expiration}")
@@ -37,8 +40,7 @@ public class JwtService {
     }
 
     public <T> T extractClaim(String token, Function<Claims, T> claimsResolver) {
-        final Claims claims = extractAllClaims(token);
-        return claimsResolver.apply(claims);
+        return claimsResolver.apply(extractAllClaims(token));
     }
 
     private Claims extractAllClaims(String token) {
@@ -51,43 +53,41 @@ public class JwtService {
 
     private boolean isValid(String token) {
         try {
-            final Claims claims = Jwts.parser()
-                    .verifyWith(secretKey)
-                    .build()
-                    .parseSignedClaims(token)
-                    .getPayload();
-            final Date expiration = claims.getExpiration();
-            return expiration != null && expiration.after(Date.from(Instant.now()));
+            Claims claims = extractAllClaims(token);
+            return claims.getExpiration() != null
+                    && claims.getExpiration().after(Date.from(Instant.now()));
         } catch (JwtException e) {
             return false;
         }
     }
 
     private boolean isRevoked(String token) {
-        return taskHubTokenService.isTokenValid(token);
+        return !artezanTokenService.isTokenValid(token);
     }
 
     public boolean validateToken(String token) {
-        return isValid(token) && isRevoked(token);
+        return isValid(token) && !isRevoked(token);
     }
 
     public Tokens generateToken(Authentication authentication) {
         SecuredUser securedUser = (SecuredUser) authentication.getPrincipal();
+
+        assert securedUser != null;
         String username = securedUser.getUsername();
-        Map<String, Object> claims = getClaims(authentication);
+        Map<String, Object> claims = getClaims(securedUser.getUser());
 
-        String accessToken = accessToken(claims, username);
-        String refreshToken = refreshToken(username);
-
-        return new Tokens(accessToken, refreshToken);
-    }
-
-    private String accessToken(Map<String, Object> claims, String userName) {
-        return createToken(claims, userName, accessExpiration);
+        return new Tokens(
+                accessToken(claims, username),
+                refreshToken(username)
+        );
     }
 
     public String accessToken(User user) {
         return createToken(getClaims(user), user.getEmailAddress(), accessExpiration);
+    }
+
+    private String accessToken(Map<String, Object> claims, String userName) {
+        return createToken(claims, userName, accessExpiration);
     }
 
     private String refreshToken(String userName) {
@@ -104,17 +104,19 @@ public class JwtService {
                 .compact();
     }
 
-    public Map<String, Object> getClaims(Authentication authentication) {
-        Map<String, Object> claims = new HashMap<>();
-        authentication.getAuthorities().forEach(authority -> claims.put("claim", authority));
-        return claims;
+    private Map<String, Object> getClaims(User user) {
+        List<String> roles = user.getRoles().stream()
+                .map(Role::name)
+                .toList();
+        return Map.of("roles", roles);
     }
 
-    public Map<String, Object> getClaims(User user) {
+    public Map<String, Object> getClaims(Authentication authentication) {
         Map<String, Object> claims = new HashMap<>();
-        user.getRoles().stream()
-                .map(role -> new SimpleGrantedAuthority(role.name()))
-                .forEach(authority -> claims.put("claim", authority));
+        List<String> roles = authentication.getAuthorities().stream()
+                .map(GrantedAuthority::getAuthority)
+                .toList();
+        claims.put("roles", roles);
         return claims;
     }
 

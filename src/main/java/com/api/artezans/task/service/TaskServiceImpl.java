@@ -23,6 +23,7 @@ import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 import static com.api.artezans.utils.ApiResponse.apiResponse;
@@ -44,11 +45,11 @@ public class TaskServiceImpl implements TaskService {
         try {
             User user = currentUser();
             Task newTask = createTask(user, request);
-            log.info("{} posting a task for {}", user.getFirstName(), request.getTaskServiceName());
+            log.info("{} posting a task for {}", user.getFirstName(), request.taskServiceName());
 
             List<AppNotification> notifications = createNotifications(user, request);
             saveNotificationsAndTask(notifications, newTask);
-            log.info("{} successfully posted a task for {}", user.getFirstName(), request.getTaskServiceName());
+            log.info("{} successfully posted a task for {}", user.getFirstName(), request.taskServiceName());
             return apiResponse(TASK_CREATED);
         } catch (NoSuchElementException e) {
             throw new ArtezanException(CUSTOMER_NOT_FOUND);
@@ -84,14 +85,14 @@ public class TaskServiceImpl implements TaskService {
     private Task createTask(User user, TaskRequest request) {
         return Task.builder()
                 .posterId(user.getId())
-                .taskServiceName(capitalized(request.getTaskServiceName()))
-                .taskDescription(request.getTaskDescription())
-                .userAddress(request.getUserAddress().isEmpty() ? user.getAddress().toString() : request.getUserAddress())
+                .taskServiceName(capitalized(request.taskServiceName()))
+                .taskDescription(request.taskDescription())
+                .userAddress(request.userAddress().isEmpty() ? user.getAddress().toString() : request.userAddress())
                 .postedAt(LocalDateTime.now())
                 .isActive(true)
-                .taskDates(request.getTaskDate())
-                .customerBudget(request.getCustomerBudget())
-                .taskImage(uploadImage(request.getTaskImage()))
+                .taskDates(request.taskDate())
+                .customerBudget(request.customerBudget())
+                .taskImage(uploadImage(request.taskImage()))
                 .build();
     }
 
@@ -107,11 +108,11 @@ public class TaskServiceImpl implements TaskService {
 
     private List<AppNotification> createNotifications(User user, TaskRequest request) {
         LocalDateTime currentTime = LocalDateTime.now();
-        List<Listing> listings = listingService.findListingByServiceName(request.getTaskServiceName());
+        List<Listing> listings = listingService.findListingByServiceName(request.taskServiceName());
         if (listings.isEmpty()) {
             return Collections.singletonList(AppNotification.builder()
                     .notificationTime(LocalDateTime.now())
-                    .message("A new task for " + request.getTaskServiceName() +
+                    .message("A new task for " + request.taskServiceName() +
                             " service has just been posted by " +
                             user.getFirstName())
                     .build());
@@ -119,7 +120,7 @@ public class TaskServiceImpl implements TaskService {
             return listings.parallelStream()
                     .filter(listing -> !listing.getServiceProvider().getUser().equals(user))
                     .map(list -> notifyServiceProvider(
-                            list.getServiceProvider().getUser(), request.getTaskServiceName(), currentTime
+                            list.getServiceProvider().getUser(), request.taskServiceName(), currentTime
                     ))
                     .collect(Collectors.toList());
         }
@@ -141,10 +142,12 @@ public class TaskServiceImpl implements TaskService {
 
     private User currentUser() {
         try {
-            SecuredUser securedUser = (SecuredUser) SecurityContextHolder
-                    .getContext()
-                    .getAuthentication()
+            SecuredUser securedUser = (SecuredUser) Objects.requireNonNull(SecurityContextHolder
+                            .getContext()
+                            .getAuthentication())
                     .getPrincipal();
+
+            assert securedUser != null;
             return securedUser.getUser();
         } catch (Exception e) {
             throw new ArtezanException("User not authenticated");

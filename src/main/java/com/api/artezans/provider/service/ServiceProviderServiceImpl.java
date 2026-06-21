@@ -44,6 +44,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 import static com.api.artezans.utils.ApiResponse.apiResponse;
@@ -80,9 +81,9 @@ public class ServiceProviderServiceImpl implements ServiceProviderService {
                         .password(passwordEncoder.encode(request.getPassword()))
                         .firstName(request.getFirstName())
                         .lastName(request.getLastName())
-                        .isEnabled(false)
+                        .enabled(false)
                         .phoneNumber(request.getPhoneNumber())
-                      //  .stripeId(registerServiceProviderOnStripe(request))   ////todo: will uncomment this when to go live
+                        //  .stripeId(registerServiceProviderOnStripe(request))   ////todo: will uncomment this when to go live
                         .roles(Collections.singleton(Role.SERVICE_PROVIDER))
                         .accountState(AccountState.NOT_VERIFIED)
                         .build())
@@ -113,7 +114,7 @@ public class ServiceProviderServiceImpl implements ServiceProviderService {
                 .phone(registrationRequest.getPhoneNumber())
                 .description(SERVICE_PROVIDER)
                 .build();
-            return stripeService.createCustomer(request);
+        return stripeService.createCustomer(request);
     }
 
     @Override
@@ -129,12 +130,12 @@ public class ServiceProviderServiceImpl implements ServiceProviderService {
         ServiceProvider serviceProvider = findServiceProviderByUserEmailAddress(user.getEmailAddress());
         if (serviceProvider.getUser().getAddress() == null) {
             serviceProvider.getUser().setAddress(Address.builder()
-                    .streetName(capitalized(updateRequest.getStreetName()))
-                    .streetNumber(updateRequest.getStreetNumber())
-                    .suburb(capitalized(updateRequest.getSuburb()))
-                    .state(capitalized(updateRequest.getState()))
-                    .postCode(updateRequest.getPostCode())
-                    .unitNumber(updateRequest.getUnitNumber())
+                    .streetName(capitalized(updateRequest.streetName()))
+                    .streetNumber(updateRequest.streetNumber())
+                    .suburb(capitalized(updateRequest.suburb()))
+                    .state(capitalized(updateRequest.state()))
+                    .postCode(updateRequest.postCode())
+                    .unitNumber(updateRequest.unitNumber())
                     .build());
             UserIdentity userIdentity;
             if (serviceProvider.getUserIdentity() == null) {
@@ -158,13 +159,13 @@ public class ServiceProviderServiceImpl implements ServiceProviderService {
     }
 
     private UserIdentity getNewUserIdentity(ServiceProviderUpdateRequest updateRequest) {
-        boolean invalidIdNumber = updateRequest.getIdNumber() == null || updateRequest.getIdNumber().isEmpty();
+        boolean invalidIdNumber = updateRequest.idNumber() == null || updateRequest.idNumber().isEmpty();
         if (!invalidIdNumber) {
             UserIdentity userIdentity = new UserIdentity();
-            userIdentity.setIdNumber(updateRequest.getIdNumber());
-            userIdentity.setIdType(getIdType(updateRequest.getIdType()));
+            userIdentity.setIdNumber(updateRequest.idNumber());
+            userIdentity.setIdType(getIdType(updateRequest.idType()));
             try {
-                userIdentity.setIdImage(multimediaService.upload(updateRequest.getIdImage()));
+                userIdentity.setIdImage(multimediaService.upload(updateRequest.idImage()));
             } catch (Exception e) {
                 throw new ArtezanException("an error occurred uploading your ID Image");
             }
@@ -189,9 +190,9 @@ public class ServiceProviderServiceImpl implements ServiceProviderService {
         UserIdentity userIdentity = userIdentityRepository.findByIdNumber(
                         serviceProvider.getUserIdentity().getIdNumber())
                 .orElseThrow(ArtezanException::new);
-        userIdentity.setIdType(getIdType(updateRequest.getIdType()));
+        userIdentity.setIdType(getIdType(updateRequest.idType()));
         try {
-            userIdentity.setIdImage(multimediaService.upload(updateRequest.getIdImage()));
+            userIdentity.setIdImage(multimediaService.upload(updateRequest.idImage()));
         } catch (Exception e) {
             throw new ArtezanException("an error occurred uploading your ID Image");
         }
@@ -263,10 +264,13 @@ public class ServiceProviderServiceImpl implements ServiceProviderService {
 
     private User currentUser() {
         try {
-            SecuredUser securedUser = (SecuredUser) SecurityContextHolder
-                    .getContext()
-                    .getAuthentication()
+            SecuredUser securedUser = (SecuredUser) Objects.requireNonNull(
+                    SecurityContextHolder
+                            .getContext()
+                            .getAuthentication())
                     .getPrincipal();
+
+            assert securedUser != null;
             return securedUser.getUser();
         } catch (Exception e) {
             throw new ArtezanException("User not authenticated");

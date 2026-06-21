@@ -25,6 +25,7 @@ public class BrevoSMSImpl implements SMSService {
     @Override
     public String sendSms(SmsRequest request) {
         request.setSender(appName);
+
         return webClient
                 .baseUrl(smsUrl)
                 .defaultHeader("api-key", apiKey)

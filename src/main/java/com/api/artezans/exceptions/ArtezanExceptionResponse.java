@@ -12,7 +12,7 @@ import java.util.Map;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-public class TaskHubExceptionResponse {
+public class ArtezanExceptionResponse {
 
     private Map<String, String> data;
 

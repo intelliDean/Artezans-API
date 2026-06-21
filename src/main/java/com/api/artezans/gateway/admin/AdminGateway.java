@@ -3,6 +3,8 @@ package com.api.artezans.gateway.admin;
 import com.api.artezans.admin.AdminService;
 import com.api.artezans.authentication.dtos.AuthRequest;
 import com.api.artezans.authentication.dtos.AuthResponse;
+import com.api.artezans.authentication.services.AuthService;
+import com.api.artezans.authentication.services.AuthServiceImpl;
 import com.api.artezans.category.controller.ServiceCategoryController;
 import com.api.artezans.category.data.dtos.CategoryNameDto;
 import com.api.artezans.category.data.dtos.CategoryRequest;
@@ -37,6 +39,7 @@ import static com.api.artezans.gateway.task.TaskUtil.*;
 public class AdminGateway {
 
     private final AdminService adminService;
+    private final AuthService authService;
     private final SqlScriptExecutor sqlScriptExecutor;
     private final ServiceCategoryController serviceCategoryController;
     private final ListingController listingController;
@@ -45,9 +48,7 @@ public class AdminGateway {
     @PostMapping("login")
     @Operation(summary = LOGIN_SUMMARY, description = LOGIN_DESCRIPTION, operationId = LOGIN_OP_ID)
     public ResponseEntity<AuthResponse> adminLogin(@RequestBody AuthRequest authRequest) {
-        return ResponseEntity.ok(
-                adminService.adminLogin(authRequest)
-        );
+        return ResponseEntity.ok(adminService.adminLogin(authRequest));
     }
 
     @PostMapping("script")

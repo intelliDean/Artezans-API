@@ -2,6 +2,7 @@ package com.api.artezans.users.services;
 
 import com.api.artezans.config.security.JwtService;
 import com.api.artezans.config.security.SecuredUser;
+import com.api.artezans.config.utils.SoftHasher;
 import com.api.artezans.exceptions.ArtezanException;
 import com.api.artezans.exceptions.TokenException;
 import com.api.artezans.exceptions.UserNotFoundException;
@@ -10,8 +11,8 @@ import com.api.artezans.notifications.mail.MailService;
 import com.api.artezans.notifications.mail.dto.EmailRequest;
 import com.api.artezans.notifications.mail.dto.MailInfo;
 import com.api.artezans.password.service.PasswordResetTokenService;
-import com.api.artezans.tokens.model.TaskHubVerificationToken;
-import com.api.artezans.tokens.service.interfaces.TaskHubVerificationTokenService;
+import com.api.artezans.tokens.model.ArtezanVerificationToken;
+import com.api.artezans.tokens.service.interfaces.ArtezanVerificationTokenService;
 import com.api.artezans.users.models.User;
 import com.api.artezans.users.models.enums.AccountState;
 import com.api.artezans.users.repository.UserRepository;
@@ -24,7 +25,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.ResourceLoader;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import org.thymeleaf.TemplateEngine;
@@ -39,6 +39,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.Period;
 import java.util.Collections;
+import java.util.Objects;
 import java.util.Optional;
 
 import static com.api.artezans.utils.ApiResponse.apiResponse;
@@ -49,11 +50,12 @@ import static com.api.artezans.utils.ArtezanUtils.*;
 @Service
 @RequiredArgsConstructor
 public class UserServiceImpl implements UserService {
-    private final TaskHubVerificationTokenService taskHubVerificationTokenService;
+    private final ArtezanVerificationTokenService artezanVerificationTokenService;
     private final PasswordResetTokenService passwordResetTokenService;
     private final MultimediaService multimediaService;
     private final TemplateEngine templateEngine;
     private final UserRepository userRepository;
+    private final SoftHasher softHash;
     private final MailService mailService;
     private final JwtService jwtService;
     private final ResourceLoader resourceLoader;
@@ -98,8 +100,8 @@ public class UserServiceImpl implements UserService {
     private String saveTokenAndGenerateUrl(User user, String url) {
         final String token = generateToken(12);
         final String email = user.getEmailAddress();
-        TaskHubVerificationToken verificationToken;
-        verificationToken = TaskHubVerificationToken.builder()
+        ArtezanVerificationToken verificationToken;
+        verificationToken = ArtezanVerificationToken.builder()
                 .token(token)
                 .emailAddress(email)
                 .generatedAt(LocalDateTime.now())
@@ -107,10 +109,10 @@ public class UserServiceImpl implements UserService {
                 .revoked(false)
                 .expired(false)
                 .build();
-        taskHubVerificationTokenService.saveToken(verificationToken);
+        artezanVerificationTokenService.saveToken(verificationToken);
 
-        String hashedEmail = new BCryptPasswordEncoder().encode(email);
-        return ArtezanUtils.getUrl(hashedEmail, token, url);
+//        String hashedEmail = new BCryptPasswordEncoder().encode(email);
+        return ArtezanUtils.getUrl(softHash.encode(email), token, url);
     }
 
 
@@ -144,10 +146,12 @@ public class UserServiceImpl implements UserService {
     @Override
     public User currentUser() {
         try {
-            SecuredUser securedUser = (SecuredUser) SecurityContextHolder
-                    .getContext()
-                    .getAuthentication()
+            SecuredUser securedUser = (SecuredUser) Objects.requireNonNull(SecurityContextHolder
+                            .getContext()
+                            .getAuthentication())
                     .getPrincipal();
+
+            assert securedUser != null;
             return securedUser.getUser();
         } catch (Exception e) {
             throw new ArtezanException("User not authenticated");
@@ -156,18 +160,19 @@ public class UserServiceImpl implements UserService {
 
 
     @Override
-    public ApiResponse verified(String token, String email) {
-        TaskHubVerificationToken taskHubVerificationToken =
-                taskHubVerificationTokenService.findByToken(token);
-        String rawEmail = taskHubVerificationToken.getEmailAddress();
+    public ApiResponse verified(String token, String hashedEmail) {
+        ArtezanVerificationToken artezanVerificationToken =
+                artezanVerificationTokenService.findByToken(token);
+        String rawEmail = artezanVerificationToken.getEmailAddress();
 
-        if (taskHubVerificationTokenService.isValid(taskHubVerificationToken)
-                && new BCryptPasswordEncoder().matches(rawEmail, email)) {
+        if (artezanVerificationTokenService.isValid(artezanVerificationToken)
+                && softHash.verify(rawEmail, hashedEmail)) {
+//                new BCryptPasswordEncoder().matches(rawEmail, email)) {
             //       taskHubVerificationToken.setRevoked(true);
             User user = findUserByEmail(rawEmail);
             user.setAccountState(AccountState.VERIFIED);
             userRepository.save(user);
-            taskHubVerificationTokenService.deleteToken(taskHubVerificationToken);
+            artezanVerificationTokenService.deleteToken(artezanVerificationToken);
             //       taskHubVerificationTokenService.saveToken(taskHubVerificationToken);
             return apiResponse("Your email is verified successfully. Please proceed to login");
         } else {
@@ -214,6 +219,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public void sendPasswordResetMail(User user, String url) {
+
         final Context context = getContext(user.getFirstName());
         String content = templateEngine.process("reset_password", context);
         EmailRequest emailRequest = EmailRequest.builder()
@@ -265,14 +271,15 @@ public class UserServiceImpl implements UserService {
     }
 
     public ApiResponse reactivate(String hashedEmail, String token) {
-        TaskHubVerificationToken taskHubVerificationToken =
-                taskHubVerificationTokenService.findByToken(token);
-        String rawEmail = taskHubVerificationToken.getEmailAddress();
+        ArtezanVerificationToken artezanVerificationToken =
+                artezanVerificationTokenService.findByToken(token);
+        String rawEmail = artezanVerificationToken.getEmailAddress();
 
-        if (taskHubVerificationTokenService.isValid(taskHubVerificationToken)
-                && new BCryptPasswordEncoder().matches(rawEmail, hashedEmail)) {
-            taskHubVerificationToken.setRevoked(true);
-            taskHubVerificationTokenService.saveToken(taskHubVerificationToken);
+        if (artezanVerificationTokenService.isValid(artezanVerificationToken)
+                && softHash.verify(rawEmail, hashedEmail)) {
+//                new BCryptPasswordEncoder().matches(rawEmail, hashedEmail)) {
+            artezanVerificationToken.setRevoked(true);
+            artezanVerificationTokenService.saveToken(artezanVerificationToken);
             User user = findUserByEmail(rawEmail);
             log.info("user to work on <<{}>>", user);
             Period period = Period.between(user.getDeactivatedAt(), LocalDate.now());

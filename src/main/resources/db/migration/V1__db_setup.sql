@@ -1,13 +1,19 @@
 --To create all the tables, extra columns and indices
 CREATE TABLE IF NOT EXISTS address
 (
-    id            bigserial primary key,
-    post_code     varchar(10),
-    state         varchar(255),
-    street_name   varchar(255),
-    street_number varchar(255),
-    suburb        varchar(255),
-    unit_number   varchar(10)
+    id                  bigserial primary key,
+    post_code           varchar(10),
+    state               varchar(255),
+    street_name         varchar(255),
+    street_number       varchar(255),
+    suburb              varchar(255),
+    unit_number         varchar(10),
+    address_with_weight tsvector GENERATED ALWAYS AS (
+        setweight(to_tsvector('simple', coalesce(suburb, '')), 'A') ||
+        setweight(to_tsvector('simple', coalesce(post_code, '')), 'B') ||
+        setweight(to_tsvector('english', coalesce(state, '')), 'C') ||
+        setweight(to_tsvector('english', coalesce(street_name, '')), 'D')
+        ) STORED
 );
 
 
@@ -47,7 +53,7 @@ CREATE TABLE IF NOT EXISTS change_password_token
 );
 
 
-CREATE TABLE IF NOT EXISTS services
+CREATE TABLE IF NOT EXISTS service
 (
     id           bigserial primary key,
     service_name varchar(255),
@@ -59,29 +65,33 @@ CREATE TABLE IF NOT EXISTS services
 
 CREATE TABLE IF NOT EXISTS task
 (
-    id           bigserial primary key,
-    poster_id           bigint,
+    id                bigserial primary key,
+    poster_id         bigint,
     task_service_name varchar(255),
     task_description  text,
     user_address      varchar(255),
     posted_at         timestamp,
     is_active         boolean,
     customer_budget   numeric(38, 2),
-    task_image        varchar(255)
+    task_image        varchar(255),
+    task_with_weight  tsvector GENERATED ALWAYS AS (
+        setweight(to_tsvector('english', coalesce(task_service_name, '')), 'A') ||
+        setweight(to_tsvector('english', coalesce(task_description, '')), 'B') ||
+        setweight(to_tsvector('english', coalesce(user_address, '')), 'C')
+        ) STORED
 );
 
 CREATE TABLE IF NOT EXISTS task_task_dates
 (
-    task_id bigint not null,
+    task_id    bigint not null,
+    task_dates date,
+    primary key (task_id, task_dates),
     foreign key (task_id) references task (id)
-    match simple on update no action on delete cascade,
-    task_dates date
+        match simple on update no action on delete cascade
 );
 
 
-
-
-CREATE TABLE IF NOT EXISTS task_hub_verification_token
+CREATE TABLE IF NOT EXISTS artezan_verification_token
 (
     id            bigserial primary key,
     email_address varchar(255),
@@ -95,44 +105,94 @@ CREATE TABLE IF NOT EXISTS task_hub_verification_token
 
 CREATE TABLE IF NOT EXISTS user_identity
 (
-    id        bigserial primary key,
-    id_image  varchar(255),
-    id_number varchar(255) not null unique,
-    id_type   varchar(255)
+    id                   bigserial primary key,
+    id_image             varchar(255),
+    id_number            varchar(255) not null unique,
+    id_type              varchar(255),
+    identity_with_weight tsvector GENERATED ALWAYS AS (
+        setweight(to_tsvector('simple', coalesce(id_type, '')), 'A') ||
+        setweight(to_tsvector('simple', coalesce(id_number, '')), 'B')
+        ) STORED
 );
+
+
+-- CREATE TABLE IF NOT EXISTS users
+-- (
+--     id               bigserial primary key,
+--     account_state    varchar(255),
+--     deactivated_at   date,
+--     email_address    varchar(255) not null unique,
+--     first_name       varchar(255) not null,
+--     is_enabled       boolean      not null,
+--     last_name        varchar(255) not null,
+--     password         varchar(255) not null,
+--     phone_number     varchar(255),
+--     profile_image    varchar(255),
+--     registered_at    timestamp(6),
+--     roles            varchar(255)[],
+--     stripe_id        varchar(255),
+--     address_id       bigint,
+--     foreign key (address_id) references address (id)
+--         match simple on update no action on delete set null,
+--     user_with_weight tsvector GENERATED ALWAYS AS (
+--         setweight(to_tsvector('simple', coalesce(first_name, '')), 'A') ||
+--         setweight(to_tsvector('simple', coalesce(last_name, '')), 'B') ||
+--         setweight(to_tsvector('simple', coalesce(phone_number, '')), 'C') ||
+--         setweight(to_tsvector('simple', coalesce(email_address, '')), 'D') ||
+--         setweight(to_tsvector('simple', coalesce(account_state, '')), 'D')
+--     ) STORED
+-- );
 
 
 CREATE TABLE IF NOT EXISTS users
 (
-    id             bigserial primary key,
-    account_state  varchar(255),
-    deactivated_at date,
-    email_address  varchar(255) not null unique,
-    first_name     varchar(255) not null,
-    is_enabled     boolean      not null,
-    last_name      varchar(255) not null,
-    password       varchar(255) not null,
-    phone_number   varchar(255),
-    profile_image  varchar(255),
-    registered_at  timestamp(6),
-    roles          varchar(255)[],
-    stripe_id      varchar(255),
-    address_id     bigint,
+    id               bigserial primary key,
+    account_state    varchar(255),
+    deactivated_at   date,
+    email_address    varchar(255) not null unique,
+    first_name       varchar(255) not null,
+    enabled          boolean      not null default false,
+    last_name        varchar(255) not null,
+    password         varchar(255) not null,
+    phone_number     varchar(255) unique,
+    profile_image    varchar(255),
+    registered_at    timestamp(6) not null,
+    stripe_id        varchar(255),
+    address_id       bigint,
     foreign key (address_id) references address (id)
-        match simple on update no action on delete set null
+        match simple on update no action on delete set null,
+    user_with_weight tsvector GENERATED ALWAYS AS (
+        setweight(to_tsvector('simple', coalesce(first_name, '')), 'A') ||
+        setweight(to_tsvector('simple', coalesce(last_name, '')), 'B') ||
+        setweight(to_tsvector('simple', coalesce(phone_number, '')), 'C') ||
+        setweight(to_tsvector('simple', coalesce(email_address, '')), 'D') ||
+        setweight(to_tsvector('simple', coalesce(account_state, '')), 'D')
+        ) STORED
 );
 
-
-CREATE TABLE IF NOT EXISTS app_notification
+-- ✅ New table for roles
+CREATE TABLE IF NOT EXISTS user_roles
 (
-    id                bigserial primary key,
-    message           text   not null,
-    notification_time timestamp(6),
-    recipient_id      bigint,
-    foreign key (recipient_id) references users (id)
-        match simple on update no action on delete cascade
+    user_id bigint       not null,
+    role    varchar(255) not null,
+    primary key (user_id, role),
+    foreign key (user_id) references users (id) on delete cascade
 );
 
+CREATE TABLE IF NOT EXISTS app_notifications
+(
+    id                       bigserial primary key,
+    message                  text         not null,
+    type                     varchar(255) not null,
+    read                     boolean      not null default false,
+    notification_time        timestamp(6) not null,
+    recipient_id             bigint       not null,
+    foreign key (recipient_id) references users (id)
+        match simple on update no action on delete cascade,
+    notification_with_weight tsvector GENERATED ALWAYS AS (
+        to_tsvector('english', coalesce(message, ''))
+        ) STORED
+);
 
 CREATE TABLE IF NOT EXISTS customer
 (
@@ -150,7 +210,7 @@ CREATE TABLE IF NOT EXISTS password_reset_token
     token           varchar(255),
     user_id         bigint not null,
     foreign key (user_id) references users (id)
-    match simple on update no action on delete cascade
+        match simple on update no action on delete cascade
 );
 
 
@@ -182,10 +242,16 @@ CREATE TABLE IF NOT EXISTS listing
     stripe_id           varchar(255),
     address_id          bigint,
     foreign key (address_id) references address (id)
-    match simple on update no action on delete set null,
-    service_provider_id bigint not null,
+        match simple on update no action on delete set null,
+    service_provider_id bigint       not null,
     foreign key (service_provider_id) references public.service_provider (id)
-    match simple on update no action on delete cascade
+        match simple on update no action on delete cascade,
+    listing_with_weight tsvector GENERATED ALWAYS AS (
+        setweight(to_tsvector('english', coalesce(service_name, '')), 'A') ||
+        setweight(to_tsvector('english', coalesce(service_category, '')), 'B') ||
+        setweight(to_tsvector('english', coalesce(service_description, '')), 'C') ||
+        setweight(to_tsvector('simple', coalesce(business_name, '')), 'D')
+        ) STORED
 );
 
 
@@ -202,22 +268,23 @@ CREATE TABLE IF NOT EXISTS booking
     updated_at           timestamp(6),
     booking_agreement_id bigint,
     foreign key (booking_agreement_id) references booking_agreement (id)
-    match simple on update no action on delete set null,
+        match simple on update no action on delete set null,
     listing_id           bigint not null,
     foreign key (listing_id) references listing (id)
-    match simple on update no action on delete cascade,
+        match simple on update no action on delete cascade,
     user_id              bigint not null,
     foreign key (user_id) references users (id)
-    match simple on update no action on delete cascade
+        match simple on update no action on delete cascade
 );
 
 
 CREATE TABLE IF NOT EXISTS booking_book_dates
 (
     booking_id bigint not null,
+    book_dates date,
+    primary key (booking_id, book_dates),
     foreign key (booking_id) references booking (id)
-        match simple on update no action on delete cascade,
-    book_dates date
+        match simple on update no action on delete cascade
 );
 
 
@@ -230,39 +297,28 @@ CREATE TABLE IF NOT EXISTS listing_business_pictures
 );
 
 
-CREATE TABLE IF NOT EXISTS task_hub_token
-(
+CREATE TABLE IF NOT EXISTS artezan_token (
     id            bigserial primary key,
     access_token  varchar(255),
     refresh_token varchar(255),
     revoked       boolean not null,
-    user_id       bigint not null,
+    user_id       bigint  not null,
     foreign key (user_id) references users (id)
-    match simple on update no action on delete cascade
+        match simple on update no action on delete cascade
 );
 
 
---create the tsvector columns where necessary
-ALTER TABLE address
-    ADD COLUMN address_with_weight tsvector;
-
-ALTER TABLE users
-    ADD COLUMN user_with_weight tsvector;
-
-ALTER TABLE user_identity
-    ADD COLUMN identity_with_weight tsvector;
-
-ALTER TABLE listing
-    ADD COLUMN listing_with_weight tsvector;
-
-ALTER TABLE task
-    ADD COLUMN task_with_weight tsvector;
-
-ALTER TABLE app_notification
-    ADD COLUMN notification_with_weight tsvector;
-
-
 --create the indices where necessary
+CREATE INDEX IF NOT EXISTS idx_notification_recipient ON app_notifications (recipient_id);
+
+CREATE INDEX IF NOT EXISTS idx_notification_read ON app_notifications (read);
+
+CREATE INDEX IF NOT EXISTS idx_notification_with_weight ON app_notifications USING gin (notification_with_weight);
+
+CREATE INDEX IF NOT EXISTS idx_user_account_state ON users (account_state);
+
+CREATE INDEX IF NOT EXISTS idx_user_with_weight ON users USING gin (user_with_weight);
+
 CREATE INDEX address_with_weight_idx ON address USING GIN (address_with_weight);
 
 CREATE INDEX user_with_weight_idx ON users USING GIN (user_with_weight);
@@ -275,129 +331,27 @@ CREATE INDEX idx_listing_availability ON listing (available_days);
 
 CREATE INDEX task_with_weight_idx ON task USING GIN (task_with_weight);
 
-CREATE INDEX notification_with_weight_idx ON app_notification USING GIN (notification_with_weight);
+CREATE INDEX notification_with_weight_idx ON app_notifications USING GIN (notification_with_weight);
 
 --This is to install the pg_trgm extension to perform more concise search eg, mic for michael
 CREATE EXTENSION IF NOT EXISTS pg_trgm;
 
 
---To create the ts_vector columns updates and their triggers
-CREATE FUNCTION user_tsvector_trigger()
-    RETURNS TRIGGER AS
-$$
-BEGIN
-    NEW.user_with_weight :=
-                            setweight(to_tsvector('simple', coalesce(NEW.first_name, '')), 'A') ||
-                            setweight(to_tsvector('simple', coalesce(NEW.last_name, '')), 'B') ||
-                            setweight(to_tsvector('simple', coalesce(NEW.phone_number, '')), 'C') ||
-                            setweight(to_tsvector('simple', coalesce(NEW.email_address, '')), 'D') ||
-                            setweight(to_tsvector('simple', coalesce(NEW.account_state, '')), 'D');
-
-    RETURN NEW;
-END
-$$ LANGUAGE plpgsql;
-
-CREATE TRIGGER user_tsvectorupdate
-    BEFORE INSERT OR UPDATE
-    ON users
-    FOR EACH ROW
-EXECUTE FUNCTION user_tsvector_trigger();
-
-CREATE FUNCTION address_tsvector_trigger()
-    RETURNS TRIGGER AS
-$$
-BEGIN
-    NEW.address_with_weight :=
-                        setweight(to_tsvector('simple', coalesce(NEW.suburb, '')), 'A') ||
-                        setweight(to_tsvector('simple', coalesce(NEW.post_code, '')), 'B') ||
-                        setweight(to_tsvector('english', coalesce(NEW.state, '')), 'C') ||
-                        setweight(to_tsvector('english', coalesce(NEW.street_name, '')), 'D');
-    RETURN NEW;
-END
-$$ LANGUAGE plpgsql;
-
-CREATE TRIGGER address_tsvectorupdate
-    BEFORE INSERT OR UPDATE
-    ON address
-    FOR EACH ROW
-EXECUTE FUNCTION address_tsvector_trigger();
-
-CREATE FUNCTION identity_tsvector_trigger()
-    RETURNS TRIGGER AS
-$$
-BEGIN
-    NEW.identity_with_weight :=
-                setweight(to_tsvector('simple', coalesce(NEW.id_type, '')), 'A') ||
-                setweight(to_tsvector('simple', coalesce(NEW.id_number, '')), 'B');
-    RETURN NEW;
-END
-$$ LANGUAGE plpgsql;
-
-CREATE TRIGGER identity_tsvectorupdate
-    BEFORE INSERT OR UPDATE
-    ON user_identity
-    FOR EACH ROW
-EXECUTE FUNCTION identity_tsvector_trigger();
-
-CREATE FUNCTION listing_tsvector_trigger()
-    RETURNS TRIGGER AS
-$$
-BEGIN
-    NEW.listing_with_weight :=
-                        setweight(to_tsvector('english', coalesce(NEW.service_name, '')), 'A') ||
-                        setweight(to_tsvector('english', coalesce(NEW.service_category, '')), 'B') ||
-                        setweight(to_tsvector('english', coalesce(NEW.service_description, '')), 'C') ||
-                        setweight(to_tsvector('simple', coalesce(NEW.business_name, '')), 'D');
-    RETURN NEW;
-END
-$$ LANGUAGE plpgsql;
-
-CREATE TRIGGER listing_tsvectorupdate
-    BEFORE INSERT OR UPDATE
-    ON listing
-    FOR EACH ROW
-EXECUTE FUNCTION listing_tsvector_trigger();
-
-CREATE FUNCTION task_tsvector_trigger()
-    RETURNS TRIGGER AS
-$$
-BEGIN
-    NEW.task_with_weight :=
-                    setweight(to_tsvector('english', coalesce(NEW.task_service_name, '')), 'A') ||
-                    setweight(to_tsvector('english', coalesce(NEW.task_description, '')), 'B') ||
-                    setweight(to_tsvector('english', coalesce(NEW.user_address, '')), 'C');
-    RETURN NEW;
-END
-$$ LANGUAGE plpgsql;
-
-CREATE TRIGGER task_tsvectorupdate
-    BEFORE INSERT OR UPDATE
-    ON task
-    FOR EACH ROW
-EXECUTE FUNCTION task_tsvector_trigger();
-
-CREATE FUNCTION notification_tsvector_trigger()
-    RETURNS TRIGGER AS
-$$
-BEGIN
-    NEW.notification_with_weight := to_tsvector('english', coalesce(NEW.message, ''));
-    RETURN NEW;
-END
-$$ LANGUAGE plpgsql;
-
-CREATE TRIGGER notification_tsvectorupdate
-    BEFORE INSERT OR UPDATE
-    ON app_notification
-    FOR EACH ROW
-EXECUTE FUNCTION notification_tsvector_trigger();
-
+--Add Address for Admin
+INSERT INTO address (id, unit_number, street_number, street_name, suburb, state, post_code)
+VALUES (nextVal('address_id_seq'), '5', '12', 'Lekki Phase 1', 'Lekki', 'Lagos', '219003');
 
 --Add Admin to the database
 INSERT INTO users (id, first_name, last_name, email_address, password, phone_number,
-                   is_enabled, account_state, registered_at, roles)
-VALUES (nextVal('users_id_seq'), 'One', 'Block', 'oneblockhq@gmail.com',
-        '12345', '+2348095729090', true, 'VERIFIED',
-        '2026-09-02 12:00:00', ARRAY ['ADMIN']);
+                   enabled, account_state, registered_at, address_id)
+VALUES (nextval('users_id_seq'), 'One', 'Block', 'oneblockhq@gmail.com',
+        '12345',
+        '+2348095729090', true, 'VERIFIED',
+        '2026-09-02 12:00:00', currval('address_id_seq'));
+
+-- 3. Assign role
+INSERT INTO user_roles (user_id, role)
+VALUES (currval('users_id_seq'), 'ADMIN');
 
 --Populates category name table
 INSERT INTO category_name(id, name)
@@ -436,8 +390,7 @@ VALUES (nextVal('category_id_seq'), 'HOME SERVICES'),
        (nextVal('category_id_seq'), 'TRAVEL & ADVENTURE');
 
 --Populates service table
--- I decided not to have id in this but give the responsibility to hibernate to do it for me
-INSERT INTO services(service_name, category_id)
+INSERT INTO service(service_name, category_id)
 VALUES ('Cleaning', 1),
        ('Plumbing', 1),
        ('Electrician', 1),
@@ -502,5 +455,3 @@ VALUES ('Cleaning', 1),
        ('Tour Guides', 15),
        ('Adventure Excursions', 15),
        ('Travel Planning', 15);
-
-

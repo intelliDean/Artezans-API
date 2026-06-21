@@ -1,15 +1,11 @@
 package com.api.artezans.notifications.mail.dto;
 
-import lombok.*;
+import lombok.Builder;
 
-@Setter
-@Getter
 @Builder
-@NoArgsConstructor
-@AllArgsConstructor
-public class MailInfo {
+public record MailInfo(
 
-    private String name;
+        String name,
 
-    private String email;
-}
+        String email
+) {}

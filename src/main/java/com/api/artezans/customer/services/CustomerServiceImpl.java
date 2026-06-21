@@ -1,5 +1,6 @@
 package com.api.artezans.customer.services;
 
+import com.api.artezans.config.security.SecuredUser;
 import com.api.artezans.customer.data.dto.request.CustomerRegistrationRequest;
 import com.api.artezans.customer.data.dto.request.CustomerUpdateRequest;
 import com.api.artezans.customer.data.model.Customer;
@@ -60,7 +61,7 @@ public class CustomerServiceImpl implements CustomerService {
                         .phoneNumber(registrationRequest.getPhoneNumber())
                         //  .stripeId(registerCustomerOnStripe(registrationRequest)) ////todo: will uncomment this when to go live
                         .emailAddress(emailAddress)
-                        .isEnabled(false)
+                        .enabled(false)
                         .password(passwordEncoder.encode(registrationRequest.getPassword()))
                         .roles(Collections.singleton(Role.CUSTOMER))
                         .accountState(AccountState.NOT_VERIFIED)
@@ -90,7 +91,7 @@ public class CustomerServiceImpl implements CustomerService {
     }
 
     @Override
-    public Customer currentCustomer(User user) {
+    public Customer currentCustomer(SecuredUser user) {
         return findCustomerByUserEmailAddress(user.getEmailAddress());
     }
 
@@ -113,12 +114,12 @@ public class CustomerServiceImpl implements CustomerService {
 
     private static Address getAddress(CustomerUpdateRequest updateRequest) {
         return Address.builder()
-                .streetName(capitalized(updateRequest.getStreetName()))
-                .streetNumber(updateRequest.getStreetNumber())
-                .suburb(capitalized(updateRequest.getSuburb()))
-                .state(capitalized(updateRequest.getState()))
-                .postCode(updateRequest.getPostCode())
-                .unitNumber(updateRequest.getUnitNumber())
+                .streetName(capitalized(updateRequest.streetName()))
+                .streetNumber(updateRequest.streetNumber())
+                .suburb(capitalized(updateRequest.suburb()))
+                .state(capitalized(updateRequest.state()))
+                .postCode(updateRequest.postCode())
+                .unitNumber(updateRequest.unitNumber())
                 .build();
     }
 
@@ -128,7 +129,7 @@ public class CustomerServiceImpl implements CustomerService {
     }
 
     @Override
-    public ApiResponse updateCustomerInfo(JsonPatch updatePayload, User user) {
+    public ApiResponse updateCustomerInfo(JsonPatch updatePayload, SecuredUser user) {
         Customer customer = currentCustomer(user);
         //Passenger Object to node
         JsonNode node = objectMapper.convertValue(customer, JsonNode.class);

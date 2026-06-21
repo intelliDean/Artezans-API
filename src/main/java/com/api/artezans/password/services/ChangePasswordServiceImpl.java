@@ -1,5 +1,6 @@
 package com.api.artezans.password.services;
 
+import com.api.artezans.config.security.SecuredUser;
 import com.api.artezans.exceptions.ArtezanException;
 import com.api.artezans.notifications.mail.MailService;
 import com.api.artezans.notifications.mail.dto.EmailRequest;
@@ -44,7 +45,7 @@ public class ChangePasswordServiceImpl implements ChangePasswordService {
 
     @Override
     @Transactional(propagation = REQUIRED)
-    public ApiResponse initChangeOfPassword(ChangePasswordRequest passwordRequest, User currentUser) {
+    public ApiResponse initChangeOfPassword(ChangePasswordRequest passwordRequest, SecuredUser currentUser) {
         //  User currentUser = userService.currentUser();
         validatePassword(passwordRequest);
         unauthorized(!passwordEncoder.matches(passwordRequest.getOldPassword(),
@@ -65,7 +66,7 @@ public class ChangePasswordServiceImpl implements ChangePasswordService {
         }
     }
 
-    private String saveTokenAndGenerateLink(ChangePasswordRequest passwordRequest, User currentUser) {
+    private String saveTokenAndGenerateLink(ChangePasswordRequest passwordRequest, SecuredUser currentUser) {
         String token = generateToken(24);
         ChangePasswordToken changePasswordToken = ChangePasswordToken.builder()
                 .token(token)
@@ -88,7 +89,7 @@ public class ChangePasswordServiceImpl implements ChangePasswordService {
         return context;
     }
 
-    private EmailRequest getEmailRequest(User user, String url) {
+    private EmailRequest getEmailRequest(SecuredUser user, String url) {
         String firstName = user.getFirstName();
         Context context = getContext(firstName);
         final String content = templateEngine.process("change_password_mail", context);

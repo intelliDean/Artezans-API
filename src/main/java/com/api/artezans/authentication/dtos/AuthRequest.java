@@ -8,7 +8,7 @@ import lombok.*;
 
 import static com.api.artezans.utils.ArtezanUtils.*;
 
-//@Builder
+@Builder
 public record AuthRequest(
         @Email(message = EMAIL_ERROR_MSG)
         @NotNull(message = "Email Address" + NOT_NULL)

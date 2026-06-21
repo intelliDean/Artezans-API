@@ -14,9 +14,10 @@ import java.io.PrintWriter;
 
 @Slf4j
 @Component
-public class TaskHubAuthEntryPoint implements AuthenticationEntryPoint {
-    private static final int UNAUTHORIZED_STATUS_CODE = HttpServletResponse.SC_UNAUTHORIZED;
-    private static final String APPLICATION_JSON_CONTENT_TYPE = MediaType.APPLICATION_JSON_VALUE;
+public class ArtezanAuthEntryPoint implements AuthenticationEntryPoint {
+
+//    private static final int UNAUTHORIZED_STATUS_CODE = HttpServletResponse.SC_UNAUTHORIZED;
+//    private static final String APPLICATION_JSON_CONTENT_TYPE = MediaType.APPLICATION_JSON_VALUE;
 
     @Override
     public void commence(
@@ -28,8 +29,8 @@ public class TaskHubAuthEntryPoint implements AuthenticationEntryPoint {
         log.error("Unauthorized: {}", authException.getMessage());
 
         if (!response.isCommitted()) {
-            response.setStatus(UNAUTHORIZED_STATUS_CODE);
-            response.setContentType(APPLICATION_JSON_CONTENT_TYPE);
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            response.setContentType(MediaType.APPLICATION_JSON_VALUE);
 
             try (PrintWriter writer = response.getWriter()) {
                 writer.write(generateErrorMessage(authException));
@@ -38,7 +39,6 @@ public class TaskHubAuthEntryPoint implements AuthenticationEntryPoint {
             log.warn("Unauthorized request received, but response has already been committed.");
         }
     }
-
 
     private String generateErrorMessage(AuthenticationException authException) {
         return "{\"Unauthorized\" : \"%s\"}".formatted(authException.getMessage());

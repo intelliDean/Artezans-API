@@ -1,12 +1,12 @@
 package com.api.artezans.config.utils;
 
-
 import com.api.artezans.exceptions.ArtezanException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.jspecify.annotations.NonNull;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.web.access.AccessDeniedHandler;
 import org.springframework.stereotype.Component;
@@ -19,18 +19,18 @@ import java.util.Map;
 @Slf4j
 @Component
 @AllArgsConstructor
-public class TaskHubAccessDeniedHandler implements AccessDeniedHandler {
+public class ArtezanAccessDeniedHandler implements AccessDeniedHandler {
 
     private final ObjectMapper objectMapper;
 
     @Override
     public void handle(
-            HttpServletRequest request,
+            @NonNull HttpServletRequest request,
             HttpServletResponse response,
             AccessDeniedException accessDeniedException) {
 
         response.setContentType("application/json");
-        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+        response.setStatus(HttpServletResponse.SC_FORBIDDEN);
 
         Map<String, Object> data = new HashMap<>();
         data.put("status", false);

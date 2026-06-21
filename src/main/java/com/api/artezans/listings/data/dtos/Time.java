@@ -1,15 +1,9 @@
 package com.api.artezans.listings.data.dtos;
 
-import lombok.*;
 
-@Setter
-@Getter
-@Builder
-@AllArgsConstructor
-@NoArgsConstructor
-public class Time {
+public record Time (
 
-    private int hour;
+        int hour,
 
-    private int minute;
-}
+        int minute
+) {}

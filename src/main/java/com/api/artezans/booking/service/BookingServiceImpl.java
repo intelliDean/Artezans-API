@@ -8,6 +8,7 @@ import com.api.artezans.booking.data.model.enums.AgreementStatus;
 import com.api.artezans.booking.data.model.enums.BookingStage;
 import com.api.artezans.booking.data.model.enums.BookingState;
 import com.api.artezans.booking.data.repository.BookingRepository;
+import com.api.artezans.config.security.SecuredUser;
 import com.api.artezans.exceptions.ArtezanException;
 import com.api.artezans.listings.data.enums.AvailableDays;
 import com.api.artezans.listings.data.models.Listing;
@@ -69,13 +70,13 @@ public class BookingServiceImpl implements BookingService {
     private final Context context;
 
     @Override
-    public ApiResponse bookService(BookingRequest request, User user) {
-        LocalTime start = LocalTime.of(request.getBookFrom().getHour(), request.getBookFrom().getMinute());
-        LocalTime end = LocalTime.of(request.getBookTo().getHour(), request.getBookTo().getMinute());
+    public ApiResponse bookService(BookingRequest request, SecuredUser securedUser) {
+        LocalTime start = LocalTime.of(request.bookFrom().hour(), request.bookFrom().minute());
+        LocalTime end = LocalTime.of(request.bookTo().hour(), request.bookTo().minute());
         if (start.isAfter(end)) throw new ArtezanException("Time is incoherent");
 
-        Listing listing = listingService.userFindsListingById(request.getListingId());
-        Set<LocalDate> dates = getDates(request.getBookDates(), listing);
+        Listing listing = listingService.userFindsListingById(request.listingId());
+        Set<LocalDate> dates = getDates(request.bookDates(), listing);
         BigDecimal totalCost = getTotalCost(dates, start, end, listing);
         Booking booking = Booking.builder()
                 .bookFrom(start)
@@ -83,7 +84,7 @@ public class BookingServiceImpl implements BookingService {
                 .bookingStage(BookingStage.PROPOSED)
                 .bookState(OPEN)
                 .bookDates(dates)
-                .user(user)
+                .user(securedUser.getUser())
                 .listing(listing)
                 .accepted(false)
                 .totalCost(totalCost)

@@ -26,7 +26,7 @@ public class Listing {
     @GeneratedValue(strategy = IDENTITY)
     private Long id;
 
-    @Column(nullable = false, updatable = false)
+    @Column(nullable = false, updatable = false, unique = true )
     private String businessName;
 
     private String serviceCategory;

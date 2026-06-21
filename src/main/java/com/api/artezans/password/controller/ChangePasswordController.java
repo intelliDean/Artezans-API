@@ -14,7 +14,7 @@ public class ChangePasswordController {
     private final ChangePasswordService changePasswordService;
 
     public ApiResponse initChangeOfPassword(ChangePasswordRequest passwordRequest, SecuredUser securedUser) {
-        return changePasswordService.initChangeOfPassword(passwordRequest, securedUser.getUser());
+        return changePasswordService.initChangeOfPassword(passwordRequest, securedUser);
     }
 
     public ApiResponse changePassword(String token) {

@@ -11,8 +11,8 @@ import static com.api.artezans.utils.ArtezanUtils.*;
 @Setter
 @Getter
 @Builder
-@AllArgsConstructor
 @NoArgsConstructor
+@AllArgsConstructor
 public class CustomerRegistrationRequest {
 
     @NotNull(message = "First name" + NOT_NULL)
@@ -38,3 +38,5 @@ public class CustomerRegistrationRequest {
     @Pattern(regexp = VALID_PASSWORD, message = PASSWORD_MESSAGE)
     private String password;
 }
+
+

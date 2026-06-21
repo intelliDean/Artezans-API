@@ -10,21 +10,25 @@ public class GoogleOauth2UserData extends Oauth2UserData {
 
     @Override
     public String getUserId() {
-        return attributes.get("sub").toString();
+        Object val = attributes.get("sub");
+        return val != null ? val.toString() : null;
     }
 
     @Override
     public String getName() {
-        return attributes.get("name").toString();
+        Object val = attributes.get("name");
+        return val != null ? val.toString() : null;
     }
 
     @Override
     public String getEmail() {
-        return attributes.get("email").toString();
+        Object val = attributes.get("email");
+        return val != null ? val.toString() : null;
     }
 
     @Override
     public String getImageUrl() {
-        return attributes.get("picture").toString();
+        Object val = attributes.get("picture");
+        return val != null ? val.toString() : null;
     }
 }

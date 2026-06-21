@@ -1,16 +1,12 @@
 package com.api.artezans.payment.stripe.dto;
 
-import lombok.*;
 
-@Getter
-@Setter
+import lombok.Builder;
+
 @Builder
-@NoArgsConstructor
-@AllArgsConstructor
-public class Response {
+public record Response (
 
-    private String intentID;
+        String intentID,
 
-    private String clientSecret;
-
-}
+        String clientSecret
+) {}

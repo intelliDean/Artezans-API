@@ -1,15 +1,9 @@
 package com.api.artezans.listings.data.dtos;
 
-import lombok.*;
 
-@Setter
-@Getter
-@Builder
-@AllArgsConstructor
-@NoArgsConstructor
-public class LocationFilter {
+public record LocationFilter(
 
-    private String serviceName;
+        String serviceName,
 
-    private String location;
-}
+        String location
+) {}

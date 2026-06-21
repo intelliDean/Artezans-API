@@ -1,15 +1,8 @@
 package com.api.artezans.payment.paypal;
 
-import lombok.*;
+public record PaymentResponse(
 
-@Setter
-@Getter
-@Builder
-@AllArgsConstructor
-@NoArgsConstructor
-public class PaymentResponse {
+        String paymentId,
 
-    private String paymentId;
-
-    private String payerId;
-}
+        String payerId
+) {}

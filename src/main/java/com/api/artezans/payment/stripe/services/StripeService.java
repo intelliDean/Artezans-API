@@ -44,10 +44,10 @@ public class StripeService {
 
     public String createCustomer(@Valid CreateCustomerRequest request) {
         CustomerCreateParams params = CustomerCreateParams.builder()
-                .setName(request.getName())
-                .setEmail(request.getEmail())
-                .setPhone(request.getPhone())
-                .setDescription(request.getDescription()) //this will tell who they are, either customer or service provider
+                .setName(request.name())
+                .setEmail(request.email())
+                .setPhone(request.phone())
+                .setDescription(request.description()) //this will tell who they are, either customer or service provider
                 .build();
         try {
             Customer customer = Customer.create(params);
@@ -124,10 +124,10 @@ public class StripeService {
 
     public String createProduct(ProductRequest request) {
         ProductCreateParams params = ProductCreateParams.builder()
-                .setName(request.getServiceName())
-                .setDescription(request.getServiceDescription())
+                .setName(request.serviceName())
+                .setDescription(request.serviceDescription())
                 .setActive(request.isActive())
-                .putMetadata("Service Provider ID", request.getServiceProviderStripeId())
+                .putMetadata("Service Provider ID", request.serviceProviderStripeId())
 //                .setDefaultPriceData(ProductCreateParams.DefaultPriceData.builder()
 //                        .setCurrency("AUD")
 //                        .setUnitAmount(request.getServicePricePerUnit() * 100)
@@ -145,15 +145,15 @@ public class StripeService {
     public Response createPaymentIntent(PaymentIntentRequest request) {
         PaymentIntentCreateParams params =
                 PaymentIntentCreateParams.builder()
-                        .setAmount(request.getAmount() * 100L)
-                        .putMetadata("Service", request.getServiceName())
+                        .setAmount(request.amount() * 100L)
+                        .putMetadata("Service", request.serviceName())
                         .setCurrency("aud")
-                        .setReceiptEmail(request.getReceiptEmail())
-                        .setCustomer(request.getCustomerId())
-                        .setDescription("This payment is for " + request.getServiceName() + " service")
-                        .putMetadata("Product Owner", request.getProductOwner())
-                        .putMetadata("Product ID", request.getProductId())
-                        .putMetadata("Booking ID", request.getBookingId())
+                        .setReceiptEmail(request.receiptEmail())
+                        .setCustomer(request.customerId())
+                        .setDescription("This payment is for " + request.serviceName() + " service")
+                        .putMetadata("Product Owner", request.productOwner())
+                        .putMetadata("Product ID", request.productId())
+                        .putMetadata("Booking ID", request.bookingId())
 //                        .setAutomaticPaymentMethods(
 //                                PaymentIntentCreateParams
 //                                        .AutomaticPaymentMethods

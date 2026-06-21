@@ -1,15 +1,7 @@
 package com.api.artezans.customer.data.dto.response;
 
-import lombok.*;
+public record RegistrationResponse(
 
-@Setter
-@Getter
-@Builder
-@AllArgsConstructor
-@RequiredArgsConstructor
-public class RegistrationResponse {
-
-    private Object data;
-    private boolean isSuccessful;
-
-}
+        Object data,
+        boolean isSuccessful
+) {}

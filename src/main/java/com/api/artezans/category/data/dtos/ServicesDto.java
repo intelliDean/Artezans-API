@@ -1,13 +1,8 @@
 package com.api.artezans.category.data.dtos;
 
-import lombok.*;
 
-@Setter
-@Getter
-@Builder
-@AllArgsConstructor
-@RequiredArgsConstructor
-public class ServicesDto {
+public record ServicesDto(
 
-     private String serviceName;
+        String serviceName
+) {
 }

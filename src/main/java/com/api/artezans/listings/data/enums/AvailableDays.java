@@ -4,6 +4,7 @@ import lombok.Getter;
 
 @Getter
 public enum AvailableDays {
+
     MONDAY("Monday"),
     TUESDAY("Tuesday"),
     WEDNESDAY("Wednesday"),
@@ -14,5 +15,4 @@ public enum AvailableDays {
 
 
     AvailableDays(String day) {}
-
 }

@@ -1,30 +1,27 @@
 package com.api.artezans.utils;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
 
-@Setter
-@Getter
-@NoArgsConstructor
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class ApiResponse {
+public record ApiResponse(
+        Object data,
+        String message,
+        boolean isSuccessful
+) {
 
-    private Object data;
+    public ApiResponse(Object data, String message, boolean isSuccessful) {
+        this.message = message;
+        this.data = data;
+        this.isSuccessful = isSuccessful;
+    }
 
-    private String message;
-
-    private boolean isSuccessful;
 
     public ApiResponse(String message) {
-        this.message = message;
-        this.isSuccessful = true;
+        this(null, message, true);
     }
 
     public ApiResponse(Object data, String message) {
-        this(message);
-        this.data = data;
+        this(data, message, true);
     }
 
     public static ApiResponse apiResponse(Object data, String message) {

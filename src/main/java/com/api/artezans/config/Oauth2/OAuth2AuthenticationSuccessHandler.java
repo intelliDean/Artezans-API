@@ -3,8 +3,8 @@ package com.api.artezans.config.Oauth2;
 import com.api.artezans.config.security.JwtService;
 import com.api.artezans.config.security.SecuredUser;
 import com.api.artezans.exceptions.ArtezanException;
-import com.api.artezans.tokens.model.TaskHubToken;
-import com.api.artezans.tokens.service.interfaces.TaskHubTokenService;
+import com.api.artezans.tokens.model.ArtezanToken;
+import com.api.artezans.tokens.service.interfaces.ArtezanTokenService;
 import com.api.artezans.users.models.User;
 import com.api.artezans.users.services.UserService;
 import jakarta.servlet.http.Cookie;
@@ -12,6 +12,8 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
+import org.jspecify.annotations.NonNull;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
 import org.springframework.stereotype.Component;
@@ -29,19 +31,21 @@ import static com.api.artezans.config.Oauth2.userDetail.OAuth2Constants.REDIRECT
 @Component
 public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationSuccessHandler {
     private final JwtService jwtService;
-    private final TaskHubTokenService taskHubTokenService;
+    private final ArtezanTokenService artezanTokenService;
     private final UserService userService;
 
-    //@Value("${app.oauth2.authorized- redirect-uris}")
-    private List<String> authorizedRedirectUris;
+//    @Value("${app.oauth2.authorized-redirect-uris}")
+//    private List<String> authorizedRedirectUris;
+
+    private final OAuth2Properties oAuth2Properties;
 
     private final HttpCookieOAuth2AuthorizationRequestRepository httpCookieOAuth2AuthorizationRequestRepository;
 
     @Override
     public void onAuthenticationSuccess(
-            HttpServletRequest request,
-            HttpServletResponse response,
-            Authentication authentication) throws IOException {
+            @NonNull HttpServletRequest request,
+            @NonNull HttpServletResponse response,
+            @NonNull Authentication authentication) throws IOException {
         String targetUrl = determineTargetUrl(request, response, authentication);
 
         if (response.isCommitted()) {
@@ -55,9 +59,9 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
 
     @SneakyThrows
     @Override
-    protected String determineTargetUrl(
-            HttpServletRequest request,
-            HttpServletResponse response,
+    protected @NonNull String determineTargetUrl(
+            @NonNull HttpServletRequest request,
+            @NonNull HttpServletResponse response,
             Authentication authentication) {
         Optional<String> redirectUri = CookieUtils.getCookie(request, REDIRECT_URI_PARAM_COOKIE_NAME)
                 .map(Cookie::getValue);
@@ -70,11 +74,13 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
         String targetUrl = redirectUri.orElse(getDefaultTargetUrl());
         SecuredUser securedUser = (SecuredUser) authentication.getPrincipal();
         JwtService.Tokens token = jwtService.generateToken(authentication);
+        assert securedUser != null;
         User foundUser = userService.findUserByEmail(securedUser.getUsername());
-        taskHubTokenService.revokeToken(foundUser.getId());
+        artezanTokenService.revokeToken(foundUser.getId());
         saveToken(token, securedUser.getUser());
         return UriComponentsBuilder.fromUriString(targetUrl)
                 .queryParam("token", token.accessToken())
+                .queryParam("refreshToken", token.refreshToken())
                 .build().toUriString();
     }
 
@@ -85,7 +91,7 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
 
     private boolean isAuthorizedRedirectUri(String uri) {
         URI clientRedirectUri = URI.create(uri);
-        return authorizedRedirectUris
+        return oAuth2Properties.getAuthorizedRedirectUris()
                 .stream()
                 .anyMatch(authorizedRedirectUri -> {
                     URI authorizedURI = URI.create(authorizedRedirectUri);
@@ -95,12 +101,12 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
     }
 
     private void saveToken(JwtService.Tokens token, User user) {
-        TaskHubToken taskHubToken = TaskHubToken.builder()
+        ArtezanToken artezanToken = ArtezanToken.builder()
                 .accessToken(token.accessToken())
                 .refreshToken(token.refreshToken())
                 .revoked(false)
                 .user(user)
                 .build();
-        taskHubTokenService.saveToken(taskHubToken);
+        artezanTokenService.saveToken(artezanToken);
     }
 }

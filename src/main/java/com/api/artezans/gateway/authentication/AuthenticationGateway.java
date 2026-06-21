@@ -3,11 +3,11 @@ package com.api.artezans.gateway.authentication;
 import com.api.artezans.authentication.dtos.AuthRequest;
 import com.api.artezans.authentication.dtos.AuthResponse;
 import com.api.artezans.authentication.services.AuthService;
-import com.api.artezans.exceptions.ArtezanException;
+import com.api.artezans.config.security.JwtService;
+import com.api.artezans.utils.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -15,8 +15,6 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-
-import java.io.IOException;
 
 import static com.api.artezans.gateway.authentication.AuthUtil.*;
 
@@ -27,7 +25,7 @@ import static com.api.artezans.gateway.authentication.AuthUtil.*;
 @RequestMapping("api/v1/auth")
 public class AuthenticationGateway {
 
-   private final AuthService authenticationService;
+    private final AuthService authenticationService;
 
 
     @PostMapping("login")
@@ -39,22 +37,14 @@ public class AuthenticationGateway {
     }
 
     @PostMapping("logout")
-    @Operation(summary =LOGOUT_SUMMARY, description = LOGOUT_DESCRIPTION, operationId = LOGOUT_OP_ID)
-    public void logout(HttpServletRequest request, HttpServletResponse response) {
-        try {
-            authenticationService.logout(request, response);
-        } catch (IOException e) {
-            throw new ArtezanException();
-        }
+    @Operation(summary = LOGOUT_SUMMARY, description = LOGOUT_DESCRIPTION, operationId = LOGOUT_OP_ID)
+    public ResponseEntity<ApiResponse> logout(HttpServletRequest request) {
+        return ResponseEntity.ok(authenticationService.logout(request));
     }
 
     @PostMapping("refresh")
     @Operation(summary = REFRESH_SUMMARY, description = REFRESH_DESCRIPTION, operationId = REFRESH_OP_ID)
-    public void refreshToken(HttpServletRequest request, HttpServletResponse response) {
-        try {
-            authenticationService.refreshToken(request, response);
-        } catch (IOException e) {
-            throw new ArtezanException();
-        }
+    public ResponseEntity<JwtService.Tokens> refreshToken(HttpServletRequest request) {
+        return ResponseEntity.ok(authenticationService.refreshToken(request));
     }
 }

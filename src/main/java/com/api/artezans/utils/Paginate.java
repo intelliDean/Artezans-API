@@ -5,23 +5,15 @@ import org.springframework.data.domain.Page;
 
 import java.util.List;
 
-@Setter
-@Getter
+
 @Builder
-@AllArgsConstructor
-@NoArgsConstructor
-public class Paginate<T> {
-
-    private Long totalElements;
-
-    private Long totalPages;
-
-    private Long pageNumber;
-
-    private Long pageSize;
-
-    private List<T> content;
-
+public record Paginate<T>(
+        Long totalElements,
+        Long totalPages,
+        Long pageNumber,
+        Long pageSize,
+        List<T> content
+) {
     public static <T> Paginate<T> fromPage(Page<T> page) {
         return Paginate.<T>builder()
                 .totalElements(page.getTotalElements())

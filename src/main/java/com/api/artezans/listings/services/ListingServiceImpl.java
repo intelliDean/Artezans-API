@@ -216,13 +216,13 @@ public class ListingServiceImpl implements ListingService {
 
     @Override
     public ApiResponse findServicesFilterByLocation(LocationFilter filterBy) {
-        List<Listing> listings = listingRepository.findByLocation(filterBy.getServiceName(), filterBy.getLocation());
+        List<Listing> listings = listingRepository.findByLocation(filterBy.serviceName(), filterBy.location());
         if (listings.isEmpty()) throw new ArtezanException(NO_LISTINGS);
 
         StringBuilder stringBuilder = new StringBuilder();
-        stringBuilder.append("These are the services found, when filtered by ").append(filterBy.getServiceName());
-        if (!filterBy.getLocation().isEmpty()) {
-            stringBuilder.append(" and ").append(filterBy.getLocation());
+        stringBuilder.append("These are the services found, when filtered by ").append(filterBy.serviceName());
+        if (!filterBy.location().isEmpty()) {
+            stringBuilder.append(" and ").append(filterBy.location());
         }
 
         return apiResponse(listings, stringBuilder.toString());

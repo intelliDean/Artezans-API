@@ -13,15 +13,15 @@ import java.util.Map;
 
 @Slf4j
 @RestControllerAdvice
-public class TaskHubExceptionHandler {
+public class ArtezanExceptionHandler {
 
     @ExceptionHandler(ArtezanException.class)
-    public ResponseEntity<TaskHubExceptionResponse> handleException(
+    public ResponseEntity<ArtezanExceptionResponse> handleException(
             ArtezanException exception
     ) {
-        return ResponseEntity.badRequest()
+        return ResponseEntity.status(exception.getStatus())
                 .body(
-                        TaskHubExceptionResponse.builder()
+                        ArtezanExceptionResponse.builder()
                                 .message(exception.getMessage())
                                 .status(exception.getStatus())
                                 .build()
@@ -35,7 +35,7 @@ public class TaskHubExceptionHandler {
         Map<String, String> fieldErrors = new HashMap<>();
         e.getBindingResult().getFieldErrors()
                 .forEach(err -> fieldErrors.put(err.getField(), err.getDefaultMessage()));
-        return ResponseEntity.badRequest().body(TaskHubExceptionResponse.builder()
+        return ResponseEntity.badRequest().body(ArtezanExceptionResponse.builder()
                 .message(e.getFieldError().getDefaultMessage().toUpperCase())
                 .status(HttpStatus.BAD_REQUEST)
                 .data(fieldErrors)
@@ -43,12 +43,12 @@ public class TaskHubExceptionHandler {
     }
 
     @ExceptionHandler(UserNotAuthorizedException.class)
-    public ResponseEntity<TaskHubExceptionResponse> handleException(
+    public ResponseEntity<ArtezanExceptionResponse> handleException(
             UserNotAuthorizedException exception
     ) {
-        return ResponseEntity.badRequest()
+        return ResponseEntity.status(exception.getStatus())
                 .body(
-                        TaskHubExceptionResponse.builder()
+                        ArtezanExceptionResponse.builder()
                                 .message(exception.getMessage())
                                 .status(exception.getStatus())
                                 .build()
@@ -56,12 +56,12 @@ public class TaskHubExceptionHandler {
     }
 
     @ExceptionHandler(UserNotFoundException.class)
-    public ResponseEntity<TaskHubExceptionResponse> handleException(
+    public ResponseEntity<ArtezanExceptionResponse> handleException(
             UserNotFoundException exception
     ) {
-        return ResponseEntity.badRequest()
+        return ResponseEntity.status(exception.getStatus())
                 .body(
-                        TaskHubExceptionResponse.builder()
+                        ArtezanExceptionResponse.builder()
                                 .message(exception.getMessage())
                                 .status(exception.getStatus())
                                 .build()
@@ -69,14 +69,14 @@ public class TaskHubExceptionHandler {
     }
 
     @ExceptionHandler(BadCredentialsException.class)
-    public ResponseEntity<TaskHubExceptionResponse> handleException(
+    public ResponseEntity<ArtezanExceptionResponse> handleException(
             BadCredentialsException exception
     ) {
-        return ResponseEntity.badRequest()
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                 .body(
-                        TaskHubExceptionResponse.builder()
+                        ArtezanExceptionResponse.builder()
                                 .message(exception.getMessage())
-                                .status(HttpStatus.BAD_REQUEST)
+                                .status(HttpStatus.UNAUTHORIZED)
                                 .build()
                 );
     }

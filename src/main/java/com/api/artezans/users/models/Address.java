@@ -30,7 +30,7 @@ public class Address {
 
     private String postCode;
 
-    public Address(String state){
+    public Address(String state) {
         this.state = state;
     }
 

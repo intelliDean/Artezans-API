@@ -2,6 +2,7 @@ package com.api.artezans.config.utils;
 
 import com.cloudinary.Cloudinary;
 import com.cloudinary.utils.ObjectUtils;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
@@ -57,8 +58,8 @@ public class AppConfig {
     }
 
     @Bean
-    public com.fasterxml.jackson.databind.ObjectMapper objectMapper() {
-        com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+    public ObjectMapper objectMapper() {
+        ObjectMapper mapper = new ObjectMapper();
         mapper.findAndRegisterModules();
         return mapper;
     }

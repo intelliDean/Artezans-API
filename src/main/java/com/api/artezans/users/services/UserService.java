@@ -10,6 +10,7 @@ import java.util.Optional;
 public interface UserService {
 
     User findUserByEmail(String email);
+
     void validateExistence(String email);
 
     void sendVerificationMail(User user);
@@ -33,9 +34,11 @@ public interface UserService {
     User findUserByPasswordToken(String token);
 
     void sendPasswordResetMail(User user, String url);
+
     ApiResponse deactivateAccount();
 
     ApiResponse sendActivationMail(String emailAddress, HttpServletRequest request);
+
     ApiResponse reactivate(String email, String token);
 }
 

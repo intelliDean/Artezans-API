@@ -1,8 +1,8 @@
 package com.api.artezans.tokens.service;
 
-import com.api.artezans.tokens.model.TaskHubToken;
+import com.api.artezans.tokens.model.ArtezanToken;
 import com.api.artezans.tokens.repository.ArtezanTokenRepository;
-import com.api.artezans.tokens.service.interfaces.TaskHubTokenService;
+import com.api.artezans.tokens.service.interfaces.ArtezanTokenService;
 import lombok.AllArgsConstructor;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -10,31 +10,29 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.Optional;
 
-
 @Service
 @AllArgsConstructor
-public class TaskHubTokenServiceImpl implements TaskHubTokenService {
+public class ArtezanTokenServiceImpl implements ArtezanTokenService {
 
     private final ArtezanTokenRepository artezanTokenRepository;
 
-
     @Override
-    public void saveToken(TaskHubToken taskHubToken) {
-        artezanTokenRepository.save(taskHubToken);
+    public void saveToken(ArtezanToken token) {
+        artezanTokenRepository.save(token);
     }
 
     @Override
-    public Optional<TaskHubToken> getValidTokenByAnyToken(String anyToken) {
+    public Optional<ArtezanToken> getValidTokenByAnyToken(String anyToken) {
         return artezanTokenRepository.findValidTokenByToken(anyToken);
     }
 
     @Override
     public void revokeToken(String accessToken) {
-        final TaskHubToken taskHubToken = getValidTokenByAnyToken(accessToken)
+        final ArtezanToken token = getValidTokenByAnyToken(accessToken)
                 .orElse(null);
-        if (taskHubToken != null) {
-            taskHubToken.setRevoked(true);
-            artezanTokenRepository.save(taskHubToken);
+        if (token != null) {
+            token.setRevoked(true);
+            artezanTokenRepository.save(token);
         }
     }
 
@@ -48,17 +46,16 @@ public class TaskHubTokenServiceImpl implements TaskHubTokenService {
         );
     }
 
-
     @Override
     public boolean isTokenValid(String anyToken) {
         return getValidTokenByAnyToken(anyToken)
-                .map(taskHubToken -> !taskHubToken.isRevoked())
+                .map(token -> !token.isRevoked())
                 .orElse(false);
     }
 
     @Scheduled(cron = "0 0 0 * * ?", zone = "Australia/Sydney") //schedule to run every midnight
     void deleteAllRevokedTokens() {
-        final List<TaskHubToken> allRevokedTokens =
+        final List<ArtezanToken> allRevokedTokens =
                 artezanTokenRepository.findAllInvalidTokens();
         if (!allRevokedTokens.isEmpty()) {
             artezanTokenRepository.deleteAll(allRevokedTokens);

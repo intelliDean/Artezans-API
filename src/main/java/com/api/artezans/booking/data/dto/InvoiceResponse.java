@@ -22,8 +22,6 @@ public class InvoiceResponse {
 
     private String customerName;
 
-    private final String serviceCharges = "15%";
-
     private BigDecimal subTotal;
 
     private BigDecimal total;
@@ -35,6 +33,8 @@ public class InvoiceResponse {
     private int numberOfHoursWorked;
 
     private int numberOfDaysWorked;
+
+    private final String serviceCharges = "15%";
 
     private final LocalDateTime generatedAt = LocalDateTime.now();
 }

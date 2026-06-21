@@ -1,13 +1,7 @@
 package com.api.artezans.listings.data.dtos;
 
-import lombok.*;
 
-@Setter
-@Getter
-@Builder
-@AllArgsConstructor
-@NoArgsConstructor
-public class ListingRequestByLocationAndServiceName {
-    private String serviceName;
-    private String state;
-}
+public record ListingRequestByLocationAndServiceName (
+        String serviceName,
+        String state
+) {}

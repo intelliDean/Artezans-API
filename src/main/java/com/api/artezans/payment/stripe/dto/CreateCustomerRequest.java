@@ -2,28 +2,23 @@ package com.api.artezans.payment.stripe.dto;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-import lombok.*;
+import lombok.Builder;
 
-@Setter
-@Getter
 @Builder
-@AllArgsConstructor
-@NoArgsConstructor
-public class CreateCustomerRequest {
+public record CreateCustomerRequest(
 
-    @NotBlank
-    @NotNull
-    private String name;
+        @NotBlank
+        @NotNull
+        String name,
 
-    @NotBlank
-    @NotNull
-    private String email;
+        @NotBlank
+        @NotNull
+        String email,
 
-    @NotBlank
-    @NotNull
-    private String phone;
+        @NotBlank
+        @NotNull String phone,
 
-    @NotBlank
-    @NotNull
-    private String description;
+        @NotBlank
+        @NotNull
+        String description) {
 }

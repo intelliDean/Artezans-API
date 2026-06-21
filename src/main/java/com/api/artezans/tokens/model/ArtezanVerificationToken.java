@@ -1,8 +1,6 @@
 package com.api.artezans.tokens.model;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.Id;
+import jakarta.persistence.*;
 import lombok.*;
 import org.springframework.data.annotation.CreatedDate;
 
@@ -14,9 +12,10 @@ import static jakarta.persistence.GenerationType.IDENTITY;
 @Getter
 @Builder
 @Entity
+@Table(name = "artezan_verification_token")
 @NoArgsConstructor
 @AllArgsConstructor
-public class TaskHubVerificationToken {
+public class ArtezanVerificationToken {
     @Id
     @GeneratedValue(strategy = IDENTITY)
     private Long id;
@@ -28,12 +27,11 @@ public class TaskHubVerificationToken {
     private boolean revoked;
 
     @CreatedDate
-    private  LocalDateTime generatedAt;// = LocalDateTime.now();
+    private LocalDateTime generatedAt;
 
-    private  LocalDateTime expireAt;// = LocalDateTime.now().plusHours(24);
+    private LocalDateTime expireAt;
 
     private boolean expired;
-
 
     public boolean isExpired() {
         this.expired = expireAt.isBefore(LocalDateTime.now());

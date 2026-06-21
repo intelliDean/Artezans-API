@@ -1,22 +1,15 @@
 package com.api.artezans.booking.data.dto;
 
-import lombok.*;
-
 import java.time.LocalDate;
 import java.util.Set;
 
-@Setter
-@Getter
-@Builder
-@NoArgsConstructor
-@AllArgsConstructor
-public class BookingRequest {
+public record BookingRequest(
 
-    private Long listingId;
+        Long listingId,
 
-    private Set<LocalDate> bookDates;
+        Set<LocalDate> bookDates,
 
-    private TaskHubTime bookFrom;
+        ArtezanTime bookFrom,
 
-    private TaskHubTime bookTo;
-}
+        ArtezanTime bookTo
+) {}

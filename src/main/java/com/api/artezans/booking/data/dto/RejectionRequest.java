@@ -2,14 +2,10 @@ package com.api.artezans.booking.data.dto;
 
 import lombok.*;
 
-@Setter
-@Getter
 @Builder
-@NoArgsConstructor
-@AllArgsConstructor
-public class RejectionRequest {
+public record RejectionRequest(
 
-    private Long bookingId;
+        Long bookingId,
 
-    private String rejectionReason;
-}
+        String rejectionReason
+) {}

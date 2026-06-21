@@ -1,9 +1,6 @@
 package com.api.artezans.provider.data.dto;
 
-import jakarta.validation.constraints.Email;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.*;
 import lombok.*;
 
 import static com.api.artezans.utils.ArtezanUtils.*;
@@ -11,32 +8,34 @@ import static com.api.artezans.utils.ArtezanUtils.*;
 @Setter
 @Getter
 @Builder
-@AllArgsConstructor
 @NoArgsConstructor
+@AllArgsConstructor
 public class ServiceProviderRegistrationRequest {
 
-    @NotNull(message = "First name" + NOT_NULL)
-    @NotBlank(message = "First name" + NOT_BLANK)
-    private String firstName;
+        @NotNull(message = "First name" + NOT_NULL)
+        @NotBlank(message = "First name" + NOT_BLANK)
+        private String firstName;
 
-    @NotNull(message = "Last name" + NOT_NULL)
-    @NotBlank(message = "Last name" + NOT_BLANK)
-    private String lastName;
+        @NotNull(message = "Last name" + NOT_NULL)
+        @NotBlank(message = "Last name" + NOT_BLANK)
+        private String lastName;
 
-    @NotNull(message = "Phone number" + NOT_NULL)
-    @NotBlank(message = "Phone number" + NOT_BLANK)
-    @Pattern(regexp = VALID_NUMBER, message = NUMBER_MESSAGE)
-    private String phoneNumber;
+        @NotNull(message = "Phone number" + NOT_NULL)
+        @NotBlank(message = "Phone number" + NOT_BLANK)
+        @Pattern(regexp = VALID_NUMBER, message = NUMBER_MESSAGE)
+        private String phoneNumber;
 
-    @Email(message = "Please provide a valid email address")
-    @NotNull(message = "Email Address" + NOT_NULL)
-    @NotBlank(message = "Email Address" + NOT_BLANK)
-    private String emailAddress;
+        @Email(message = "Please provide a valid email address")
+        @NotNull(message = "Email Address" + NOT_NULL)
+        @NotBlank(message = "Email Address" + NOT_BLANK)
+        private String emailAddress;
 
-    @NotNull(message = "Password" + NOT_NULL)
-    @NotBlank(message = "Password" + NOT_BLANK)
-    @Pattern(regexp = VALID_PASSWORD, message = PASSWORD_MESSAGE)
-    private String password;
+        @NotNull(message = "Password" + NOT_NULL)
+        @NotBlank(message = "Password" + NOT_BLANK)
+        @Pattern(regexp = VALID_PASSWORD, message = PASSWORD_MESSAGE)
+        private String password;
 
-    private String idNumber;
+        private String idNumber;
+
 }
+

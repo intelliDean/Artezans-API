@@ -7,6 +7,8 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
 
+import java.nio.charset.StandardCharsets;
+import java.util.Base64;
 import java.util.Optional;
 
 /**
@@ -21,6 +23,7 @@ public class CookieUtils {
 
     public static Optional<Cookie> getCookie(HttpServletRequest request, String name) {
         Cookie[] cookies = request.getCookies();
+
         if (cookies != null) {
             for (Cookie cookie : cookies) {
                 if (cookie.getName().equals(name)) {
@@ -33,6 +36,7 @@ public class CookieUtils {
 
     public static void addCookie(HttpServletResponse response, String name, String value, int maxAge) {
         Cookie cookie = new Cookie(name, value);
+
         cookie.setPath("/");
         cookie.setHttpOnly(true);
         cookie.setMaxAge(maxAge);
@@ -41,6 +45,7 @@ public class CookieUtils {
 
     public static void deleteCookie(HttpServletRequest request, HttpServletResponse response, String name) {
         Cookie[] cookies = request.getCookies();
+
         if (cookies != null) {
             for (Cookie cookie : cookies) {
                 if (cookie.getName().equals(name)) {
@@ -55,7 +60,8 @@ public class CookieUtils {
 
     public static String serialize(Object object) {
         try {
-            return MAPPER.writeValueAsString(object);
+            String json = MAPPER.writeValueAsString(object);
+            return Base64.getUrlEncoder().encodeToString(json.getBytes(StandardCharsets.UTF_8));
         } catch (JsonProcessingException e) {
             log.error("Failed to serialize cookie value", e);
             return "";
@@ -64,8 +70,9 @@ public class CookieUtils {
 
     public static <T> T deserialize(Cookie cookie, Class<T> cls) {
         try {
-            return MAPPER.readValue(cookie.getValue(), cls);
-        } catch (JsonProcessingException e) {
+            byte[] decoded = Base64.getUrlDecoder().decode(cookie.getValue());
+            return MAPPER.readValue(decoded, cls);
+        } catch (Exception e) {
             log.error("Failed to deserialize cookie value for class {}", cls.getSimpleName(), e);
             return null;
         }

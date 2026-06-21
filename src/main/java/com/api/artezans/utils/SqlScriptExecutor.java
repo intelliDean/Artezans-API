@@ -20,7 +20,7 @@ public class SqlScriptExecutor {
 
     private final DataSource dataSource;
 
-    //When this method is called with a path of the sql script, this method runs the script
+    //when this method is called with a path of the sql script, this method runs the script
     public void executeScript(String scriptLocation) {  //example of scriptLocation is: script/test_script.sql
         ClassPathResource classPathResource = new ClassPathResource(scriptLocation);
         JdbcTemplate jdbcTemplate = new JdbcTemplate(dataSource);

@@ -34,6 +34,7 @@ public class UserController {
     public ApiResponse createLinkForPasswordRequest(EmailParam emailParam) {
         Optional<User> user = Optional.ofNullable(userService.findUserByEmail(emailParam.getEmail()));
         String passwordResetUrl = "";
+
         if (user.isPresent()) {
             String passwordToken = ArtezanUtils.generateToken(12);
             userService.savePasswordResetToken(user, passwordToken);

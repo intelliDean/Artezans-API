@@ -8,15 +8,14 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.fasterxml.jackson.datatype.jsr310.ser.LocalDateTimeSerializer;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
+import lombok.*;
 import org.springframework.http.HttpStatus;
 
 import java.time.LocalDateTime;
 
 
-@Data
+@Setter
+@Getter
 @Builder
 @AllArgsConstructor
 @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -24,7 +23,6 @@ public class APIError {
 
     private HttpStatus status;
 
-    @JsonSerialize(using = LocalDateTimeSerializer.class)
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd-MM-yyyy hh:mm:ss")
     private LocalDateTime timestamp;
 

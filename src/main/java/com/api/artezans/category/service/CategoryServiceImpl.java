@@ -3,7 +3,7 @@ package com.api.artezans.category.service;
 import com.api.artezans.category.data.dtos.CategoryRequest;
 import com.api.artezans.category.data.dtos.ServicesDto;
 import com.api.artezans.category.data.model.Category;
-import com.api.artezans.category.data.model.Services;
+
 import com.api.artezans.category.repository.CategoryRepository;
 import com.api.artezans.category.service.interfaces.CategoryService;
 import com.api.artezans.exceptions.ArtezanException;
@@ -34,30 +34,33 @@ public class CategoryServiceImpl implements CategoryService {
     @Override
     @Transactional(propagation = Propagation.REQUIRED)
     public ApiResponse addServiceCategory(CategoryRequest request)  {
-        Category category = findByCategoryName(request.getCategoryName());
+
+        Category category = findByCategoryName(request.categoryName());
       //  User user = userService.currentUser();
         log.info("CATEGORY: {}", category);
 
         if (category != null) {
             // Existing category, update services if needed
-            List<Services> services = request.getServicesDtos().stream()
+            List<com.api.artezans.category.data.model.Service> services = request.servicesDtos().stream()
                     .filter(servicesDto -> notContained(servicesDto, category))
-                    .map(servicesDto -> Services.builder()
-                            .serviceName(servicesDto.getServiceName())
+                    .map(servicesDto -> com.api.artezans.category.data.model.Service.builder()
+                            .serviceName(servicesDto.serviceName())
                             .build())
                     .toList();
             category.setServices(services);
             categoryRepository.save(category);
         } else {
+
             // New category
             Category newCategory = new Category();
-            newCategory.setCategoryName(request.getCategoryName().toUpperCase());
-            newCategory.setServices(request.getServicesDtos().stream()
-                    .map(servicesDto -> Services.builder()
-                            .serviceName(capitalized(servicesDto.getServiceName()))
+            newCategory.setCategoryName(request.categoryName().toUpperCase());
+            newCategory.setServices(request.servicesDtos().stream()
+                    .map(servicesDto -> com.api.artezans.category.data.model.Service.builder()
+                            .serviceName(capitalized(servicesDto.serviceName()))
                             .category(newCategory)
                             .build())
-                    .toList());
+                    .toList()
+            );
 
             // Associate the user with the new category
 //            User attachedUser = entityManager.merge(user);
@@ -72,7 +75,7 @@ public class CategoryServiceImpl implements CategoryService {
     private boolean notContained(ServicesDto servicesDto, Category category) {
         return category.getServices().stream()
                 .noneMatch(service ->
-                        service.getServiceName().equals(servicesDto.getServiceName()));
+                        service.getServiceName().equals(servicesDto.serviceName()));
     }
 
     @Override
@@ -86,7 +89,7 @@ public class CategoryServiceImpl implements CategoryService {
         Category category = findByCategoryName(categoryName);
         if (category != null) {
             return category.getServices().stream()
-                    .map(Services::getServiceName)
+                    .map(com.api.artezans.category.data.model.Service::getServiceName)
                     .collect(Collectors.toList());
         }
         throw new ArtezanException("Category does not exist");
@@ -96,6 +99,4 @@ public class CategoryServiceImpl implements CategoryService {
     public List<Category> viewAllCategories() {
         return categoryRepository.findAll();
     }
-
-
 }

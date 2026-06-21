@@ -1,82 +1,80 @@
 package com.api.artezans.users.dto;
 
-import com.api.artezans.notifications.app_notification.model.AppNotification;
 import com.api.artezans.users.models.Address;
 import com.api.artezans.users.models.User;
 import com.api.artezans.users.models.enums.AccountState;
 import com.api.artezans.users.models.enums.Role;
-import lombok.AllArgsConstructor;
+import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Builder;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.List;
 import java.util.Set;
 
 @Builder
-@Setter
-@AllArgsConstructor
-@NoArgsConstructor
-public class UserDTO {
+@JsonInclude(JsonInclude.Include.NON_NULL)
+public record UserDTO(
+        String stripeId,
 
-    private User user;
+        String firstName,
 
+        String lastName,
 
-    public Long getId() {
-        return user.getId();
-    }
+        String emailAddress,
 
-    public String getStripeId() {
-        return user.getStripeId();
-    }
+        String phoneNumber,
 
-    public String getFirstName() {
-        return user.getFirstName();
-    }
+        AddressDTO address,
 
-    public String getLastName() {
-        return user.getLastName();
-    }
+        String profileImage,
 
-    public String getEmailAddress() {
-        return user.getEmailAddress();
-    }
+        boolean enabled,
 
-    public String getPhoneNumber() {
-        return user.getPhoneNumber();
-    }
+        AccountState accountState,
 
-    public Address getAddress() {
-        return user.getAddress();
-    }
+        @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "EEEE, d MMMM, yyyy hh:mm:ssa")
+        LocalDate deactivatedAt,
 
-    public String getProfileImage() {
-        return user.getProfileImage();
-    }
+        @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "EEEE, d MMMM, yyyy hh:mm:ssa")
+        LocalDateTime registeredAt,
 
-    public boolean isEnabled() {
-        return user.isEnabled();
-    }
+        Set<Role> roles
+) {
+//    public UserDTO(User user) {
+//        this(
+//                user.getStripeId(),
+//                user.getFirstName(),
+//                user.getLastName(),
+//                user.getEmailAddress(),
+//                user.getPhoneNumber(),
+//                user.getAddress() == null ? null : new AddressDTO(user.getAddress()),
+//                user.getProfileImage(),
+//                user.isEnabled(),
+//                user.getAccountState(),
+//                user.getDeactivatedAt(),
+//                user.getRegisteredAt(),
+//                user.getRoles()
+//        );
+//    }
 
-    public AccountState getAccountState() {
-        return user.getAccountState();
-    }
-
-    public LocalDate getDeactivatedAt() {
-        return user.getDeactivatedAt();
-    }
-
-    public LocalDateTime getRegisteredAt() {
-        return user.getRegisteredAt();
-    }
-
-    public Set<Role> getRoles() {
-        return user.getRoles();
-    }
-
-    public List<AppNotification> getAppNotificationList() {
-        return user.getAppNotificationList();
+    public record AddressDTO(
+            String streetNumber,
+            String streetName,
+            String unitNumber,
+            String suburb,
+            String state,
+            String postCode
+    ) {
+//        public AddressDTO(Address address) {
+//            this(
+//                    address.getStreetNumber(),
+//                    address.getStreetName(),
+//                    address.getUnitNumber(),
+//                    address.getSuburb(),
+//                    address.getState(),
+//                    address.getPostCode()
+//            );
+//        }
     }
 }

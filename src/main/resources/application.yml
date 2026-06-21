@@ -2,7 +2,7 @@ spring:
   main:
     web-application-type: servlet   # Explicit: prevents WebFlux co-existence warning
   datasource:
-    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:artezan}
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:arte}
     username: ${DB_USERNAME:postgres}
     password: ${DB_PASSWORD}
     driver-class-name: org.postgresql.Driver
@@ -23,6 +23,24 @@ spring:
     baseline-version: 0
     baseline-description: "db_init"
     # Flyway inherits spring.datasource credentials automatically
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: ${GOOGLE_CLIENT_ID}
+            client-secret: ${GOOGLE_CLIENT_SECRET}
+            redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
+            scope:
+              - email
+              - profile
+          github:
+            client-id: ${GITHUB_CLIENT_ID:Ov23liSjfHWumIc9UlD2}
+            client-secret: ${GITHUB_CLIENT_SECRET:5419f8402bf2da3d3b594768aaf1035060cde416}
+            redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
+            scope:
+              - read:user
+              - user:email
   output:
     ansi:
       enabled: always
@@ -32,6 +50,8 @@ artezan:
   security:
     jwt:
       secret: ${JWT_SECRET}
+    email:
+      salt: ${EMAIL_SECRET}
 
 # ── Token expiry (hours) ──────────────────────────────────────────────────────
 access_expiration: ${ACCESS_EXPIRATION:3}
@@ -41,6 +61,12 @@ refresh_expiration: ${REFRESH_EXPIRATION:168}
 app:
   name: ${APP_NAME:Artezans}
   email: ${APP_EMAIL:info@artezans.com}
+  oauth2:
+    authorized-redirect-uris:
+      - ${OAUTH2_AUTHORIZED_REDIRECT_URI}
+      - ${OAUTH2_REDIRECT_URI_LOCAL}
+      - ${OAUTH2_REDIRECT_URI_PROD}
+
 
 frontend_url: ${FRONTEND_URL:http://localhost:3000}
 charges: ${CHARGES:0.15}

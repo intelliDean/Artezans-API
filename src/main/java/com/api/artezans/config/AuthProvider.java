@@ -1,5 +1,10 @@
 package com.api.artezans.config;
 
 public enum AuthProvider {
-    GOOGLE, LOCAL /*GITHUB*/
+
+    LOCAL,
+
+    GOOGLE,
+
+    GITHUB
 }

@@ -27,6 +27,6 @@ public class CustomerController {
         return customerService.uploadProfilePicture(image);
     }
     public ApiResponse updateCustomerInfo (JsonPatch updatePayload, SecuredUser securedUser) {
-        return customerService.updateCustomerInfo(updatePayload, securedUser.getUser());
+        return customerService.updateCustomerInfo(updatePayload, securedUser);
     }
 }

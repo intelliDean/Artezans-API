@@ -12,6 +12,6 @@ public class TestMailImpl implements MailService {
 
     @Override
     public void sendMail(EmailRequest request) {
-        log.info("Mail sent successfully to: {}", request.getTo().get(0).getEmail());
+        log.info("Mail sent successfully to: {}", request.getTo().getFirst().email());
     }
 }

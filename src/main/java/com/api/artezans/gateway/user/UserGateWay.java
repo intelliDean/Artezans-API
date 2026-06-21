@@ -19,6 +19,7 @@ import static com.api.artezans.gateway.user.UserUtil.*;
 @Tag(name = "User Controller")
 @RequestMapping("api/v1/user")
 public class UserGateWay {
+
     private final UserController userController;
 
     @PostMapping("/forgot-password")

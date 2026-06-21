@@ -8,12 +8,13 @@ import static jakarta.persistence.CascadeType.PERSIST;
 import static jakarta.persistence.GenerationType.IDENTITY;
 
 @Entity
+@Table(name = "artezan_token")
 @Getter
 @Setter
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class TaskHubToken {
+public class ArtezanToken {
     @Id
     @GeneratedValue(strategy = IDENTITY)
     private Long id;

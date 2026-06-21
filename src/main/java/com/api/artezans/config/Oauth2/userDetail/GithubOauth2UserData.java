@@ -8,22 +8,26 @@ public class GithubOauth2UserData extends Oauth2UserData {
     }
     @Override
     public String getUserId() {
-        return  attributes.get("id").toString();
+        Object val = attributes.get("id");
+        return val != null ? val.toString() : null;
     }
 
     @Override
     public String getName() {
-        return attributes.get("name").toString();
+        Object val = attributes.get("name");
+        return val != null ? val.toString() : null;
     }
 
     @Override
     public String getEmail() {
-        return attributes.get("email").toString();
+        Object val = attributes.get("email");
+        return val != null ? val.toString() : null;
     }
 
     @Override
     public String getImageUrl() {
-        return attributes.get("avatar_url").toString();
+        Object val = attributes.get("avatar_url");
+        return val != null ? val.toString() : null;
     }
 
 }

@@ -1,25 +1,14 @@
 package com.api.artezans.payment.stripe.dto;
 
-import lombok.*;
+import lombok.Builder;
 
-@Setter
-@Getter
 @Builder
-@AllArgsConstructor
-@NoArgsConstructor
-public class PaymentIntentRequest {
-
-    private Long amount;
-
-    private String bookingId;
-
-    private String serviceName;
-
-    private String receiptEmail;
-
-    private String customerId;
-
-    private String productOwner;
-
-    private String productId;
+public record PaymentIntentRequest(
+        Long amount,
+        String bookingId,
+        String serviceName,
+        String receiptEmail,
+        String customerId,
+        String productOwner,
+        String productId) {
 }

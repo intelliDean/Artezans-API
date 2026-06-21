@@ -7,13 +7,14 @@ import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
 import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
-@SpringBootApplication
+
 @EnableAsync
 @EnableScheduling
 @EnableJpaAuditing
+@SpringBootApplication
 public class Artezan {
 
-    static void main(String[] args) {
+    public static void main(String[] args) {
         // Load .env file if present (dev only).
         // In production, real env vars take precedence.
         Dotenv.configure()

@@ -7,32 +7,28 @@ import lombok.*;
 import static com.api.artezans.utils.ArtezanUtils.*;
 
 
-@Setter
-@Getter
-@Builder
-@AllArgsConstructor
-@NoArgsConstructor
-public class CustomerUpdateRequest {
+public record CustomerUpdateRequest(
 
-    @NotNull(message = "Street Number" + NOT_NULL)
-    @NotBlank(message = "Street Number" + NOT_BLANK)
-    private String streetNumber;
+        @NotNull(message = "Street Number" + NOT_NULL)
+        @NotBlank(message = "Street Number" + NOT_BLANK)
+        String streetNumber,
 
-    @NotNull(message = "Street Name" + NOT_NULL)
-    @NotBlank(message = "Street Name" + NOT_BLANK)
-    private String streetName;
+        @NotNull(message = "Street Name" + NOT_NULL)
+        @NotBlank(message = "Street Name" + NOT_BLANK)
+        String streetName,
 
-    @NotNull(message = "Suburb" + NOT_NULL)
-    @NotBlank(message = "Suburb" + NOT_BLANK)
-    private String suburb;
+        @NotNull(message = "Suburb" + NOT_NULL)
+        @NotBlank(message = "Suburb" + NOT_BLANK)
+        String suburb,
 
-    @NotNull(message = "State" + NOT_NULL)
-    @NotBlank(message = "State" + NOT_BLANK)
-    private String state;
+        @NotNull(message = "State" + NOT_NULL)
+        @NotBlank(message = "State" + NOT_BLANK)
+        String state,
 
-    @NotNull(message = "Post Code" + NOT_NULL)
-    @NotBlank(message = "Post Code" + NOT_BLANK)
-    private String postCode;
+        @NotNull(message = "Post Code" + NOT_NULL)
+        @NotBlank(message = "Post Code" + NOT_BLANK)
+        String postCode,
 
-    private String unitNumber;
+        String unitNumber
+) {
 }

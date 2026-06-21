@@ -3,6 +3,8 @@ package com.api.artezans.config;
 import com.api.artezans.config.security.AppUserDetailsService;
 import com.api.artezans.config.security.JwtService;
 import com.api.artezans.config.utils.APIError;
+import com.api.artezans.config.utils.NoAuth;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -16,11 +18,14 @@ import org.springframework.http.MediaType;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
+import org.springframework.util.AntPathMatcher;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.util.Arrays;
 
 import static com.api.artezans.utils.ArtezanUtils.BEARER;
 import static org.springframework.http.HttpHeaders.AUTHORIZATION;
@@ -32,24 +37,45 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
     private final JwtService jwtService;
     private final AppUserDetailsService userDetailsService;
+    private final ObjectMapper objectMapper;
+
+
 
 
     @Override
-    protected void doFilterInternal(HttpServletRequest request,
+    protected boolean shouldNotFilter(HttpServletRequest request) {
+        String path = request.getServletPath();
+        AntPathMatcher matcher = new AntPathMatcher();
+        return Arrays.stream(NoAuth.whiteList())
+                .anyMatch(pattern -> matcher.match(pattern, path));
+    }
+
+    @Override
+    protected void doFilterInternal(@NotNull HttpServletRequest request,
                                     @NotNull HttpServletResponse response,
                                     @NotNull FilterChain filterChain) throws ServletException, IOException {
         String authHeader = request.getHeader(AUTHORIZATION);
+
+        if (authHeader == null || !authHeader.startsWith(BEARER)) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+
         try {
-            if (authHeader == null || !authHeader.startsWith(BEARER)) {
-                filterChain.doFilter(request, response);
+            String token = authHeader.substring(7); // 'Bearer ' length makes it 7
+
+            if (!jwtService.validateToken(token)) {
+                setErrorResponse(HttpStatus.UNAUTHORIZED, response,
+                        new JwtException("Token is invalid or expired"));
                 return;
             }
-            String token = authHeader.substring(7);
+
             String username = jwtService.extractUsername(token);
 
             if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
                 UserDetails userDetails = userDetailsService.loadUserByUsername(username);
-                if (jwtService.validateToken(token) && userDetails.isEnabled()) {
+
+                if (userDetails.isEnabled()) {
                     UsernamePasswordAuthenticationToken authToken =
                             new UsernamePasswordAuthenticationToken(
                                     userDetails,
@@ -58,28 +84,34 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                             );
                     authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                     SecurityContextHolder.getContext().setAuthentication(authToken);
+                    log.debug("Authenticated user: {}", username);
                 }
             }
+
             filterChain.doFilter(request, response);
+
+        } catch (UsernameNotFoundException e) {
+            log.error("User not found: {}", e.getMessage());
+            setErrorResponse(HttpStatus.UNAUTHORIZED, response, e);
         } catch (JwtException e) {
-            log.error(e.getMessage());
-            setErrorResponse(HttpStatus.BAD_REQUEST, response, e);
+            log.error("JWT error: {}", e.getMessage());
+            setErrorResponse(HttpStatus.UNAUTHORIZED, response, e); // 401 not 400
         } catch (RuntimeException e) {
-            log.error(e.getMessage());
+            log.error("Unexpected filter error: {}", e.getMessage());
             setErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR, response, e);
         }
     }
 
     public void setErrorResponse(HttpStatus status,
-                                 HttpServletResponse response, Throwable exception) {
+                                 HttpServletResponse response,
+                                 Throwable exception) {
         response.setStatus(status.value());
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
         APIError apiError = new APIError(status, exception.getLocalizedMessage(), exception);
         try {
-            String JsonOutput = apiError.convertToJson();
-            response.getWriter().write(JsonOutput);
+            response.getWriter().write(objectMapper.writeValueAsString(apiError));
         } catch (IOException e) {
-            log.error(e.getMessage());
+            log.error("Failed to write error response: {}", e.getMessage());
         }
     }
 }

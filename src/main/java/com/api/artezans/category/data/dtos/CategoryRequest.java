@@ -5,14 +5,10 @@ import lombok.*;
 
 import java.util.List;
 
-@Setter
-@Getter
-@Builder
-@AllArgsConstructor
-@RequiredArgsConstructor
-public class CategoryRequest {
 
-    private String categoryName;
+public record CategoryRequest(
 
-    private List<ServicesDto> servicesDtos;
+        String categoryName,
+
+        List<ServicesDto> servicesDtos) {
 }

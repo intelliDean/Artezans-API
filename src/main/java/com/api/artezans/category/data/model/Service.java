@@ -8,12 +8,13 @@ import static jakarta.persistence.CascadeType.PERSIST;
 import static jakarta.persistence.GenerationType.IDENTITY;
 
 @Entity
+@Table(name = "service")
 @Setter
 @Getter
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class Services {
+public class Service {
 
     @Id
     @GeneratedValue(strategy = IDENTITY)

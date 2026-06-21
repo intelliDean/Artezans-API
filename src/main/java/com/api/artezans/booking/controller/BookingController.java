@@ -21,7 +21,7 @@ public class BookingController {
     private final BookingService bookingService;
 
     public ApiResponse bookService(BookingRequest request, SecuredUser securedUser) {
-        return bookingService.bookService(request, securedUser.getUser());
+        return bookingService.bookService(request, securedUser);
     }
 
     public ApiResponse acceptProposal(Long bookingId) {
@@ -61,7 +61,7 @@ public class BookingController {
     }
 
     public ApiResponse customerRejectService(RejectionRequest request) {
-        return bookingService.customerRejectService(request.getBookingId(), request.getRejectionReason());
+        return bookingService.customerRejectService(request.bookingId(), request.rejectionReason());
     }
 
     public ApiResponse updateBookingAfterPayment(Long bookingId) {

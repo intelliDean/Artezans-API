@@ -11,69 +11,67 @@ import java.util.Set;
 
 import static com.api.artezans.utils.ArtezanUtils.*;
 
-
 @Setter
 @Getter
 @Builder
 @AllArgsConstructor
-@NoArgsConstructor
 public class ListingRequest {
 
-    @NotNull(message = "Business Name" + NOT_NULL)
-    @NotBlank(message = "Business Name" + NOT_BLANK)
-    private String businessName;
+        @NotNull(message = "Business Name" + NOT_NULL)
+        @NotBlank(message = "Business Name" + NOT_BLANK)
+        private String businessName;
 
-    @NotNull(message = "Category" + NOT_NULL)
-    @NotBlank(message = "Category" + NOT_BLANK)
-    private String serviceCategory;
+        @NotNull(message = "Category" + NOT_NULL)
+        @NotBlank(message = "Category" + NOT_BLANK)
+        private String serviceCategory;
 
-    @NotNull(message = "Service" + NOT_NULL)
-    @NotBlank(message = "Service" + NOT_BLANK)
-    private String serviceName;
+        @NotNull(message = "Service" + NOT_NULL)
+        @NotBlank(message = "Service" + NOT_BLANK)
+        private String serviceName;
 
-    @NotNull(message = "Description" + NOT_NULL)
-    @NotBlank(message = "Description" + NOT_BLANK)
-    private String serviceDescription;
+        @NotNull(message = "Description" + NOT_NULL)
+        @NotBlank(message = "Description" + NOT_BLANK)
+        private String serviceDescription;
 
-    private BigDecimal pricing; //minimum AUD$5
+        private BigDecimal pricing; //minimum AUD$5
 
-    private Set<AvailableDays> availableDays;
+        private Set<AvailableDays>availableDays;
 
-    private boolean available;
-    
-    private int startHour;
+        private boolean available;
 
-    private int closeMinute;
+        private int startHour;
 
-    private int closeHour;
+        private int closeMinute;
 
-    private int startMinute;
+        private int closeHour;
 
-    @NotNull(message = "Street Number" + NOT_NULL)
-    @NotBlank(message = "Street Number" + NOT_BLANK)
-    private String streetNumber;
+        private int startMinute;
 
-    @NotNull(message = "Street Name" + NOT_NULL)
-    @NotBlank(message = "Street Name" + NOT_BLANK)
-    private String streetName;
+        @NotNull(message = "Street Number" + NOT_NULL)
+        @NotBlank(message = "Street Number" + NOT_BLANK)
+        private String streetNumber;
 
-    @NotNull(message = "Suburb" + NOT_NULL)
-    @NotBlank(message = "Suburb" + NOT_BLANK)
-    private String suburb;
+        @NotNull(message = "Street Name" + NOT_NULL)
+        @NotBlank(message = "Street Name" + NOT_BLANK)
+        private String streetName;
 
-    @NotNull(message = "State" + NOT_NULL)
-    @NotBlank(message = "State" + NOT_BLANK)
-    private String state;
+        @NotNull(message = "Suburb" + NOT_NULL)
+        @NotBlank(message = "Suburb" + NOT_BLANK)
+        private String suburb;
 
-    @NotNull(message = "Post Code" + NOT_NULL)
-    @NotBlank(message = "Post Code" + NOT_BLANK)
-    private String postCode;
+        @NotNull(message = "State" + NOT_NULL)
+        @NotBlank(message = "State" + NOT_BLANK)
+        private String state;
 
-    private String unitNumber;
+        @NotNull(message = "Post Code" + NOT_NULL)
+        @NotBlank(message = "Post Code" + NOT_BLANK)
+        private String postCode;
 
-    private MultipartFile image1;
+        private String unitNumber;
 
-    private MultipartFile image2;
+        private MultipartFile image1;
 
-    private MultipartFile image3;
+        private MultipartFile image2;
+
+        private MultipartFile image3;
 }

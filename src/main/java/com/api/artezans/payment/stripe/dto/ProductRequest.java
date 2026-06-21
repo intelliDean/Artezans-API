@@ -1,21 +1,17 @@
 package com.api.artezans.payment.stripe.dto;
 
-import lombok.*;
+import lombok.Builder;
 
-@Getter
-@Setter
 @Builder
-@NoArgsConstructor
-@AllArgsConstructor
-public class ProductRequest {
+public record ProductRequest(
 
-    private String serviceName;
+        String serviceName,
 
-    private String serviceDescription;
+        String serviceDescription,
 
-    private boolean isActive;
+        boolean isActive,
 
-    private String serviceProviderStripeId;
+        String serviceProviderStripeId,
 
-    private Long servicePricePerUnit;
+        Long servicePricePerUnit) {
 }

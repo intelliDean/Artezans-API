@@ -62,6 +62,7 @@ public class CategoryServiceImpl implements CategoryService {
                             .build()
             );
         }
+        category.setUpdatedAt(java.time.LocalDateTime.now());
         categoryRepository.save(category);
         log.info("Updated category: {} with {} new services",
                 category.getCategoryName(), newServiceDtos.size());

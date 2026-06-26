@@ -1,8 +1,8 @@
 package com.api.artezans.provider.data.dto;
 
+import com.api.artezans.provider.data.model.enums.IdType;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-import lombok.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import static com.api.artezans.utils.ArtezanUtils.*;
@@ -19,7 +19,7 @@ public record ServiceProviderUpdateRequest(
 
         @NotNull(message = "Suburb" + NOT_NULL)
         @NotBlank(message = "Suburb" + NOT_BLANK)
-        String suburb,
+        String city,
 
         @NotNull(message = "State" + NOT_NULL)
         @NotBlank(message = "State" + NOT_BLANK)

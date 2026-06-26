@@ -1,7 +1,7 @@
 package com.api.artezans.notifications.mail;
 
-import com.api.artezans.notifications.mail.dto.EmailRequest;
-import com.api.artezans.notifications.mail.dto.MailInfo;
+import com.api.artezans.notifications.dto.EmailRequest;
+import com.api.artezans.notifications.dto.MailInfo;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;

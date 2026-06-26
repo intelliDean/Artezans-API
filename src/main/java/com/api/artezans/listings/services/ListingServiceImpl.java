@@ -5,13 +5,14 @@ import com.api.artezans.exceptions.UserNotAuthorizedException;
 import com.api.artezans.listings.data.dtos.ListingRequest;
 import com.api.artezans.listings.data.dtos.LocationFilter;
 import com.api.artezans.listings.data.models.Listing;
+import com.api.artezans.listings.data.models.Timing;
 import com.api.artezans.listings.data.repositories.ListingRepository;
 import com.api.artezans.multimedia.MultimediaService;
 import com.api.artezans.payment.stripe.dto.ProductRequest;
-import com.api.artezans.payment.stripe.services.StripeService;
+import com.api.artezans.payment.stripe.services.StripeServiceImpl;
 import com.api.artezans.provider.data.model.ServiceProvider;
 import com.api.artezans.provider.service.ServiceProviderService;
-import com.api.artezans.users.models.Address;
+import com.api.artezans.users.dto.AddressMapper;
 import com.api.artezans.utils.ApiResponse;
 import com.api.artezans.utils.Paginate;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -19,18 +20,16 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.fge.jsonpatch.JsonPatch;
 import com.github.fge.jsonpatch.JsonPatchException;
-import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
-
 
 import java.math.BigDecimal;
 import java.time.LocalTime;
@@ -41,154 +40,86 @@ import static com.api.artezans.utils.ArtezanUtils.*;
 
 @Slf4j
 @Service
-@AllArgsConstructor
+@RequiredArgsConstructor
 public class ListingServiceImpl implements ListingService {
+
     private final ServiceProviderService serviceProviderService;
     private final MultimediaService multimediaService;
     private final ListingRepository listingRepository;
-    private final StripeService stripeService;
+    private final StripeServiceImpl stripeServiceImpl;
     private final ObjectMapper objectMapper;
+    private final AddressMapper addressMapper;
+
 
     @Override
     @Transactional(propagation = Propagation.REQUIRED)
-    public ApiResponse createListing(@Valid ListingRequest request) {
+    public ApiResponse createListing(ListingRequest request, String emailAddress) {
         request.setServiceName(capitalized(request.getServiceName()));
         request.setServiceDescription(capitalized(request.getServiceDescription()));
-        Timing timing = getTime(request);
-        Listing listing = Listing.builder()
-                .businessName(request.getBusinessName())
-                .serviceCategory(request.getServiceCategory().toUpperCase())
-                .serviceName(request.getServiceName())
-                .serviceDescription(request.getServiceDescription())
-                .availableDays(request.getAvailableDays())
-                .available(request.isAvailable())
-                .address(getAddress(request))
-                .availableFrom(timing.startTime)
-                .availableTo(timing.endTime)
-                .pricing(getPrice(request))
-                .build();
-        ServiceProvider serviceProvider = serviceProviderService.currentServiceProvider();
-       // listing.setStripeId(registerListingAsProductOnStripe(request, serviceProvider));  ////todo: Will uncomment this when to go live
-        listing.setServiceProvider(serviceProvider);
-        listing.setBusinessPictures(uploadBusinessImages(request));
-        listingRepository.save(listing);
+
+
+        Timing timing = buildTiming(request);
+        List<String> imageUrls = multimediaService.upload(request.getImages());
+        ServiceProvider serviceProvider = serviceProviderService.currentServiceProvider(emailAddress);
+
+        // TODO: Uncomment when going live — registers service as a Stripe product
+//        String stripeId = registerListingOnStripe(request, serviceProvider);
+
+
+        Listing listing = listingRepository.save(
+                Listing.builder()
+                        .businessName(request.getBusinessName())
+                        .serviceCategory(request.getServiceCategory().toUpperCase())
+                        .serviceName(request.getServiceName())
+                        .serviceDescription(request.getServiceDescription())
+                        .availableDays(request.getAvailableDays())
+                        .available(request.isAvailable())
+                        .address(addressMapper.mapToAddress(request))
+                        .availableFrom(timing.startTime())
+                        .availableTo(timing.endTime())
+                        .pricing(minimumPrice(request))
+                        .serviceProvider(serviceProvider)
+                        .businessPictures(imageUrls)
+//                      .stripeId(stripeId)
+                        .build()
+        );
+
+        log.info("Listing '{}' created for provider: }", listing.getServiceName());
         return apiResponse("Listing created successfully");
     }
 
-    private String registerListingAsProductOnStripe( // TODO: 11-Nov-23 to be used when gone live 
-            @Valid ListingRequest listingRequest, ServiceProvider serviceProvider) {
-        ProductRequest request = ProductRequest.builder()
-                .serviceName(listingRequest.getServiceName())
-                .serviceDescription(listingRequest.getServiceDescription())
-                .serviceProviderStripeId(serviceProvider.getUser().getStripeId())
-                .isActive(listingRequest.isAvailable())
-                .servicePricePerUnit(listingRequest.getPricing().longValue())
-                .build();
-        return stripeService.createProduct(request);
-    }
-
-    public record Timing(LocalTime startTime, LocalTime endTime) {
-    }
-
-    private Timing getTime(ListingRequest request) {
-        LocalTime availableFrom = LocalTime.of(
-                request.getStartHour(),
-                request.getStartMinute()
-        );
-        LocalTime availableTo = LocalTime.of(
-                request.getCloseHour(),
-                request.getCloseMinute()
-        );
-        if (availableFrom.isAfter(availableTo)) {
-            throw new ArtezanException("Time is incoherent");
-        }
-        return new Timing(availableFrom, availableTo);
-    }
-
-    private BigDecimal getPrice(ListingRequest request) {
-        return request.getPricing().compareTo(BigDecimal.valueOf(5)) > 0
-                ? request.getPricing()
-                : BigDecimal.valueOf(5);
-    }
-
-    private Address getAddress(ListingRequest request) {
-        return Address.builder()
-                .streetNumber(request.getStreetNumber())
-                .streetName(capitalized(request.getStreetName()))
-                .suburb(capitalized(request.getSuburb()))
-                .state(capitalized(request.getState()))
-                .postCode(request.getPostCode())
-                .unitNumber(request.getUnitNumber())
-                .build();
-    }
-
-
     @Override
-    public List<String> viewAllListingPictures(Long listingId) {
-        return findListingById(listingId).getBusinessPictures();
-        // return businessPictureRepository.findAllByListing_Id(listingId);
+    public Paginate<Listing> getAllListings(int pageNumber) {
+        Pageable pageable = pageableOf(pageNumber);
+        Page<Listing> page = listingRepository.findAll(pageable);
+        return Paginate.fromPage(page);
     }
 
     @Override
-    public Paginate<Listing> getAllListings(int pageNUmber) {
-        log.info("{}", listingRepository.findAll());
-        Page<Listing> listings = listingRepository.findAll(
-                PageRequest.of(
-                        pageNUmber < 1 ? 0 : pageNUmber - 1,
-                        MAX_PER_PAGE
-                )
-        );
-        return Paginate.fromPage(listings);
-    }
+    public Paginate<Listing> getAllServiceProviderListings(int pageNumber, String emailAddress) {
+        Long providerId = serviceProviderService.currentServiceProvider(emailAddress).getId();
+        Pageable pageable = pageableOf(pageNumber);
 
-
-    @Override
-    public Paginate<Listing> getAllServiceProviderListings(int pageNUmber) {
-        Pageable pageable = PageRequest.of(
-                pageNUmber < 1 ? 0 : pageNUmber - 1,
-                MAX_PER_PAGE);
-        List<Listing> serviceProviderListings = listingRepository.findAllByServiceProvider_Id(
-                serviceProviderService.currentServiceProvider().getId()
-        );
-        Page<Listing> listings =
-                new PageImpl<>(serviceProviderListings, pageable, serviceProviderListings.size());
-        return Paginate.fromPage(listings);
+        List<Listing> listings = listingRepository.findAllByServiceProvider_Id(providerId);
+        return Paginate.fromPage(new org.springframework.data.domain.PageImpl<>(listings, pageable, listings.size()));
     }
 
     @Override
     public Paginate<Listing> getAllUndeletedListings(int pageNumber) {
-        Pageable pageable = PageRequest.of(pageNumber < 1 ? 0 : pageNumber - 1, MAX_PER_PAGE);
-        List<Listing> undeletedListings = listingRepository.findAllUndeletedListings();
-        Page<Listing> listings = new PageImpl<>(
-                undeletedListings, pageable, undeletedListings.size()
-        );
-        return Paginate.fromPage(listings);
+        Pageable pageable = pageableOf(pageNumber);
+
+        List<Listing> listings = listingRepository.findAllUndeletedListings();
+        return Paginate.fromPage(new org.springframework.data.domain.PageImpl<>(listings, pageable, listings.size()));
     }
 
     @Override
-    @Transactional(propagation = Propagation.REQUIRED)
-    public ApiResponse updateListing(Long listingId, JsonPatch jsonPatch) {
-        Listing listing = findListingById(listingId);
-        if (listing.getServiceProvider().equals(serviceProviderService.currentServiceProvider())) {
-            JsonNode jsonNode = objectMapper.convertValue(listing, JsonNode.class);
-            ServiceProvider serviceProvider = listing.getServiceProvider();
-            try {
-                JsonNode updateNode = jsonPatch.apply(jsonNode);
-                Listing updatedListing = objectMapper.treeToValue(updateNode, Listing.class);
-                updatedListing.setServiceProvider(serviceProvider);
-                listingRepository.save(updatedListing);
-                return apiResponse("Updated successfully");
-            } catch (JsonPatchException | JsonProcessingException e) {
-                throw new RuntimeException(e);
-            }
-        }
-        throw new UserNotAuthorizedException();
+    public List<String> viewAllListingPictures(Long listingId) {
+        return findActiveListingById(listingId).getBusinessPictures();
     }
 
     @Override
     public Listing userFindsListingById(Long listingId) {
-        return listingRepository.findActiveListingById(listingId)
-                .orElseThrow(() -> new ArtezanException("Listing does not exist"));
+        return findActiveListingById(listingId);
     }
 
     @Override
@@ -198,40 +129,18 @@ public class ListingServiceImpl implements ListingService {
     }
 
     @Override
-    public ApiResponse deleteListing(Long listingId) {
-        Listing listing = adminFindsListingById(listingId);
-        if (listing.getServiceProvider().equals(serviceProviderService.currentServiceProvider())) {
-            listing.setDeleted(true);
-            listingRepository.save(listing);
-            return apiResponse("Listing with id " + listing.getId() + " is deleted successfully");
-        }
-        throw new UserNotAuthorizedException();
-    }
-
-    @Override
-    public List<Listing> findListingByServiceName(String serviceName) {
+    public List<Listing> findAllListingsByServiceName(String serviceName) {
         return listingRepository.findByServiceNameIgnoreCase(serviceName);
-        // if (listings.isEmpty()) throw new TaskHubException(NO_LISTINGS);
     }
 
+    /**
+     * Finds listings filtered by service name and optionally by location.
+     * Delegates to {@link #findByServiceNameAndAddressState} to avoid code duplication.
+     */
     @Override
     public ApiResponse findServicesFilterByLocation(LocationFilter filterBy) {
-        List<Listing> listings = listingRepository.findByLocation(filterBy.serviceName(), filterBy.location());
-        if (listings.isEmpty()) throw new ArtezanException(NO_LISTINGS);
-
-        StringBuilder stringBuilder = new StringBuilder();
-        stringBuilder.append("These are the services found, when filtered by ").append(filterBy.serviceName());
-        if (!filterBy.location().isEmpty()) {
-            stringBuilder.append(" and ").append(filterBy.location());
-        }
-
-        return apiResponse(listings, stringBuilder.toString());
+        return findByServiceNameAndAddressState(filterBy.serviceName(), filterBy.location());
     }
-
-    private void addListing(Address address, List<Listing> listings) {
-        listings.add(listingRepository.findActiveListingByAddressId(address.getId()).get());
-    }
-
 
     @Override
     public ApiResponse findByServiceNameAndAddressState(String serviceName, String location) {
@@ -240,29 +149,135 @@ public class ListingServiceImpl implements ListingService {
             throw new ArtezanException(NO_LISTINGS);
         }
 
-        StringBuilder stringBuilder = new StringBuilder();
-        stringBuilder.append("These are the services found, when filtered by ").append(serviceName);
-        if (!location.isEmpty()) {
-            stringBuilder.append(" and ").append(location);
-        }
-
-        return apiResponse(listings, stringBuilder.toString());
+        String message = buildLocationFilterMessage(serviceName, location);
+        return apiResponse(listings, message);
     }
 
-    private Listing findListingById(Long listingId) {
+    @Override
+    @Transactional(propagation = Propagation.REQUIRED)
+    public ApiResponse updateListing(Long listingId, JsonPatch jsonPatch, String email) {
+        Listing listing = findActiveListingById(listingId);
+        ServiceProvider currentProvider = serviceProviderService.currentServiceProvider(email);
+
+        if (!listing.getServiceProvider().equals(currentProvider)) {
+            throw new UserNotAuthorizedException();
+        }
+
+        ServiceProvider originalProvider = listing.getServiceProvider();
+        try {
+            JsonNode jsonNode = objectMapper.convertValue(listing, JsonNode.class);
+            JsonNode updatedNode = jsonPatch.apply(jsonNode);
+            Listing updatedListing = objectMapper.treeToValue(updatedNode, Listing.class);
+            updatedListing.setServiceProvider(originalProvider);
+            listingRepository.save(updatedListing);
+
+            return apiResponse("Updated successfully");
+        } catch (JsonPatchException e) {
+
+            log.error("Failed to apply JSON patch to listing [id={}]: {}", listingId, e.getMessage());
+            throw new ArtezanException("Invalid patch operation: " + e.getMessage());
+        } catch (JsonProcessingException e) {
+
+            log.error("JSON processing error while updating listing [id={}]: {}", listingId, e.getMessage());
+            throw new ArtezanException("Failed to process listing update");
+        }
+    }
+
+
+    @Override
+    public ApiResponse deleteListing(Long listingId, String emailAddress) {
+        Listing listing = adminFindsListingById(listingId);
+        ServiceProvider currentProvider = serviceProviderService.currentServiceProvider(emailAddress);
+
+        if (!listing.getServiceProvider().equals(currentProvider)) {
+            throw new UserNotAuthorizedException();
+        }
+
+        listing.setDeleted(true);
+        listingRepository.save(listing);
+        log.info("Listing [id={}] soft-deleted by provider [email={}]", listing.getId(), emailAddress);
+        return apiResponse("Listing with id " + listing.getId() + " deleted successfully");
+    }
+
+
+    /**
+     * Returns a zero-based {@link Pageable}, treating any page number < 1 as page 1.
+     */
+    private Pageable pageableOf(int pageNumber) {
+        return PageRequest.of(pageNumber < 1 ? 0 : pageNumber - 1, MAX_PER_PAGE);
+    }
+
+    /**
+     * Looks up an active (non-deleted) listing, or throws {@link ArtezanException}.
+     */
+    private Listing findActiveListingById(Long listingId) {
         return listingRepository.findActiveListingById(listingId)
                 .orElseThrow(() -> new ArtezanException("Listing could not be found"));
     }
 
+    /**
+     * Builds a user-friendly message describing the location filter applied.
+     */
+    private String buildLocationFilterMessage(String serviceName, String location) {
+        StringBuilder sb = new StringBuilder("These are the services found, when filtered by ").append(serviceName);
+        if (location != null && !location.isBlank()) {
+            sb.append(" and ").append(location);
+        }
+        return sb.toString();
+    }
+
+    /**
+     * Parses start/end times from the request, validating coherence.
+     */
+    private Timing buildTiming(ListingRequest request) {
+        LocalTime from = LocalTime.of(request.getStartHour(), request.getStartMinute());
+        LocalTime to = LocalTime.of(request.getCloseHour(), request.getCloseMinute());
+
+        if (from.isAfter(to)) {
+            throw new ArtezanException("Opening time cannot be after closing time");
+        }
+        return new Timing(from, to);
+    }
+
+    /**
+     * Enforces a minimum price floor of AUD $5.
+     */
+    private BigDecimal minimumPrice(ListingRequest request) {
+        BigDecimal floor = BigDecimal.valueOf(5);
+        return (request.getPricing() != null && request.getPricing().compareTo(floor) > 0)
+                ? request.getPricing()
+                : floor;
+    }
+
+
+    /**
+     * Uploads listing images and returns the resulting URLs.
+     */
     private List<String> uploadBusinessImages(ListingRequest request) {
         try {
-            return List.of(
-                    multimediaService.upload(request.getImage1()),
-                    multimediaService.upload(request.getImage2()),
-                    multimediaService.upload(request.getImage3())
-            );
+            return multimediaService.upload(request.getImages());
         } catch (Exception e) {
+            log.error("Failed to upload business pictures: {}", e.getMessage());
             throw new ArtezanException("Error uploading business pictures");
         }
     }
+
+    /**
+     * Registers a listing as a product on Stripe.
+     * TODO: Uncomment in {@link #createListing} when going live.
+     */
+    @SuppressWarnings("unused")
+    private String registerListingOnStripe(ListingRequest listingRequest, ServiceProvider serviceProvider) {
+        ProductRequest request = ProductRequest.builder()
+                .serviceName(listingRequest.getServiceName())
+                .serviceDescription(listingRequest.getServiceDescription())
+                .serviceProviderStripeId(serviceProvider.getUser().getStripeId())
+                .isActive(listingRequest.isAvailable())
+                .servicePricePerUnit(listingRequest.getPricing().longValue())
+                .build();
+        return stripeServiceImpl.createProduct(request);
+    }
+
+    /** Immutable value type holding parsed availability hours. */
+//    public record Timing(LocalTime startTime, LocalTime endTime) {}
 }

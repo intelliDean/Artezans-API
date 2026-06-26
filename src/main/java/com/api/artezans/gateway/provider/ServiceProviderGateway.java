@@ -1,15 +1,16 @@
 package com.api.artezans.gateway.provider;
 
+import com.api.artezans.config.annotation.CurrentUser;
+import com.api.artezans.config.security.SecuredUser;
 import com.api.artezans.notifications.app_notification.model.AppNotification;
-import com.api.artezans.provider.controller.ServiceProviderController;
 import com.api.artezans.provider.data.dto.ServiceProviderRegistrationRequest;
 import com.api.artezans.provider.data.dto.ServiceProviderUpdateRequest;
+import com.api.artezans.provider.service.ServiceProviderService;
 import com.api.artezans.task.data.model.Task;
 import com.api.artezans.utils.ApiResponse;
 import com.github.fge.jsonpatch.JsonPatch;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -31,14 +32,14 @@ import static org.springframework.http.MediaType.MULTIPART_FORM_DATA_VALUE;
 @RequestMapping("/api/v1/service_provider")
 public class ServiceProviderGateway {
 
-    private final ServiceProviderController serviceProviderController;
+    private final ServiceProviderService serviceProviderService;
 
     @PostMapping("/sign-up")
     @Operation(summary = REGISTER_SUM, description = REGISTER_DESC, operationId = REGISTER_OP_ID)
     public ResponseEntity<ApiResponse> registerServiceProvider(
-            @RequestBody @Valid final ServiceProviderRegistrationRequest request, HttpServletRequest httpRequest) {
+            @RequestBody @Valid final ServiceProviderRegistrationRequest request) {
         return new ResponseEntity<>(
-                serviceProviderController.registerServiceProvider(request, httpRequest),
+                serviceProviderService.registerServiceProvider(request),
                 HttpStatus.CREATED
         );
     }
@@ -48,16 +49,16 @@ public class ServiceProviderGateway {
     public ResponseEntity<ApiResponse> completeServiceProviderProfile(
             String token, @ModelAttribute @Valid ServiceProviderUpdateRequest updateRequest) {
         return ResponseEntity.ok(
-                serviceProviderController.completeServiceProviderRegistration(token, updateRequest)
+                serviceProviderService.completeServiceProviderRegistration(token, updateRequest)
         );
     }
 
     @PreAuthorize("hasAuthority('SERVICE_PROVIDER')")
     @Operation(summary = PROF_PIC_SUM, description = PROF_PIC_DESC, operationId = PROF_PIC_OP_ID)
     @PostMapping(value = "/profile_picture", consumes = MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<ApiResponse> uploadProfilePicture(@RequestBody MultipartFile image) {
+    public ResponseEntity<ApiResponse> uploadProfilePicture(@RequestBody MultipartFile image, @CurrentUser SecuredUser currentUser) {
         return ResponseEntity.ok(
-                serviceProviderController.uploadProfilePicture(image)
+                serviceProviderService.uploadProfilePicture(image, currentUser.getUser())
         );
     }
 
@@ -65,27 +66,27 @@ public class ServiceProviderGateway {
     @PatchMapping("update")
     @Operation(summary = UPDATE_SUM, description = UPDATE_DESC, operationId = UPDATE_OP_ID)
     public ResponseEntity<ApiResponse> updateServiceProviderInfo(
-            @RequestBody JsonPatch updatePayload) {
+            @RequestBody JsonPatch updatePayload, @CurrentUser SecuredUser currentUser) {
         return ResponseEntity.ok(
-                serviceProviderController.updateServiceProviderInfo(updatePayload)
+                serviceProviderService.updateServiceProviderInfo(updatePayload, currentUser.getUser().getEmailAddress())
         );
     }
 
     @GetMapping("peculiar-tasks")
     @PreAuthorize("hasAuthority('SERVICE_PROVIDER')")
     @Operation(summary = TASK_SUM, description = TASK_DESC, operationId = TASK_OP_ID)
-    public ResponseEntity<List<Task>> serviceProviderViewPeculiarTasks() {
+    public ResponseEntity<List<Task>> serviceProviderViewPeculiarTasks(@CurrentUser SecuredUser currentUser) {
         return ResponseEntity.ok(
-                serviceProviderController.serviceProviderViewPeculiarTasks()
+                serviceProviderService.serviceProviderViewPeculiarTasks(currentUser.getUser().getEmailAddress())
         );
     }
 
     @GetMapping("notifications")
     @PreAuthorize("hasAuthority('SERVICE_PROVIDER')")
     @Operation(summary = NOTIFICATION_SUM, description = NOTIFICATION_DESC, operationId = NOTIFICATION_OP_ID)
-    public ResponseEntity<List<AppNotification>> viewAllNotifications() {
+    public ResponseEntity<List<AppNotification>> viewAllNotifications(@CurrentUser SecuredUser currentUser) {
         return ResponseEntity.ok(
-                serviceProviderController.serviceProviderNotifications()
+                serviceProviderService.serviceProviderNotifications(currentUser.getUser().getEmailAddress())
         );
     }
 }

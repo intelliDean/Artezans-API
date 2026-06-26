@@ -1,176 +1,24 @@
 package com.api.artezans.payment.stripe.services;
 
-
-import com.api.artezans.exceptions.ArtezanException;
 import com.api.artezans.payment.stripe.dto.*;
-import com.stripe.Stripe;
-import com.stripe.exception.StripeException;
 import com.stripe.model.Customer;
-import com.stripe.model.CustomerCollection;
-import com.stripe.model.PaymentIntent;
-import com.stripe.model.Product;
-import com.stripe.param.CustomerCreateParams;
-import com.stripe.param.CustomerUpdateParams;
-import com.stripe.param.PaymentIntentCreateParams;
-import com.stripe.param.ProductCreateParams;
-import jakarta.annotation.PostConstruct;
 import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Service;
 
-import java.math.BigDecimal;
-import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
-@Slf4j
-@Service
-@RequiredArgsConstructor
-public class StripeService {
+public interface StripeService {
 
-    @Value("${stripe.api.secretKey}")
-    private String stripeApiKeySK;
+    String createCustomer(@Valid CreateCustomerRequest request);
 
-    @PostConstruct
-    private void addStripeSecretKey() {
-        Stripe.apiKey = stripeApiKeySK;
-    }
+    Customer retrieveCustomer(String customerId);
 
-    public String createCustomer(@Valid CreateCustomerRequest request) {
-        CustomerCreateParams params = CustomerCreateParams.builder()
-                .setName(request.name())
-                .setEmail(request.email())
-                .setPhone(request.phone())
-                .setDescription(request.description()) //this will tell who they are, either customer or service provider
-                .build();
-        try {
-            Customer customer = Customer.create(params);
-            return customer.getId();
-        } catch (StripeException e) {
-            throw new ArtezanException(e.getMessage());
-        }
-    }
+    String updateMetaData(String customerId);
 
-    public Customer retrieveCustomer(String customerId) {
-        try {
-            return Customer.retrieve(customerId);
-        } catch (StripeException e) {
-            throw new ArtezanException(e.getMessage());
-        }
-    }
+    String deleteCustomer(String customerId);
 
-    private LocalDateTime getCreatedAt(Long created) {
-        Instant instant = Instant.ofEpochSecond(created);
-        return instant.atZone(ZoneId.systemDefault()).toLocalDateTime();
-    }
+    List<StripeResponse> allCustomers();
 
-    public String updateMetaData(String customerId) {
-        try {
-            Customer customer = Customer.retrieve(customerId);
-            CustomerUpdateParams updateParams = CustomerUpdateParams.builder()
-                    .putMetadata("order_id", "6735")
-                    .build();
+    String createProduct(ProductRequest request);
 
-            customer.update(updateParams);
-        } catch (StripeException e) {
-            throw new ArtezanException(e.getMessage());
-        }
-        return "update successfully";
-    }
-
-    public String deleteCustomer(String customerId) {
-        try {
-            Customer customer = Customer.retrieve(customerId);
-            Customer deletedCustomer = customer.delete();
-            return deletedCustomer.toJson();
-        } catch (StripeException e) {
-            throw new ArtezanException(e.getMessage());
-        }
-    }
-
-    public List<StripeResponse> allCustomers() {
-        Map<String, Object> params = new HashMap<>();
-        params.put("limit", 3);
-        CustomerCollection customerCollection;
-        try {
-            customerCollection = Customer.list(params);
-        } catch (StripeException e) {
-            throw new ArtezanException(e.getMessage());
-        }
-        List<StripeResponse> stripeResponses = new ArrayList<>();
-        for (Customer customer : customerCollection.autoPagingIterable()) {
-            LocalDateTime createdAt = getCreatedAt(customer.getCreated());
-            stripeResponses.add(
-                    StripeResponse.builder()
-                            .id(customer.getId())
-                            .name(customer.getName())
-                            .email(customer.getEmail())
-                            .phone(customer.getPhone())
-                            .balance(BigDecimal.valueOf(customer.getBalance()))
-                            .description(customer.getDescription())
-                            .created(createdAt)
-                            .address(customer.getAddress())
-                            .build()
-            );
-        }
-        return stripeResponses;
-    }
-
-    public String createProduct(ProductRequest request) {
-        ProductCreateParams params = ProductCreateParams.builder()
-                .setName(request.serviceName())
-                .setDescription(request.serviceDescription())
-                .setActive(request.isActive())
-                .putMetadata("Service Provider ID", request.serviceProviderStripeId())
-//                .setDefaultPriceData(ProductCreateParams.DefaultPriceData.builder()
-//                        .setCurrency("AUD")
-//                        .setUnitAmount(request.getServicePricePerUnit() * 100)
-//                        .build())
-                .build();
-        Product product;
-        try {
-            product = Product.create(params);
-        } catch (StripeException e) {
-            throw new ArtezanException(e.getMessage());
-        }
-        return product.getId();
-    }
-
-    public Response createPaymentIntent(PaymentIntentRequest request) {
-        PaymentIntentCreateParams params =
-                PaymentIntentCreateParams.builder()
-                        .setAmount(request.amount() * 100L)
-                        .putMetadata("Service", request.serviceName())
-                        .setCurrency("aud")
-                        .setReceiptEmail(request.receiptEmail())
-                        .setCustomer(request.customerId())
-                        .setDescription("This payment is for " + request.serviceName() + " service")
-                        .putMetadata("Product Owner", request.productOwner())
-                        .putMetadata("Product ID", request.productId())
-                        .putMetadata("Booking ID", request.bookingId())
-//                        .setAutomaticPaymentMethods(
-//                                PaymentIntentCreateParams
-//                                        .AutomaticPaymentMethods
-//                                        .builder()
-//                                        .setEnabled(true)
-//                                        .build()
-//                        )
-                        .build();
-        PaymentIntent intent;
-        try {
-            intent = PaymentIntent.create(params);
-            return Response.builder()
-                    .intentID(intent.getId())
-                    .clientSecret(intent.getClientSecret())
-                    .build();
-        } catch (StripeException e) {
-            throw new ArtezanException(e.getMessage());
-        }
-    }
+    Response createPaymentIntent(PaymentIntentRequest request);
 }

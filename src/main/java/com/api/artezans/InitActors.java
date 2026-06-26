@@ -1,6 +1,5 @@
 package com.api.artezans;
 
-import com.api.artezans.booking.data.repository.BookingRepository;
 import com.api.artezans.customer.data.model.Customer;
 import com.api.artezans.customer.data.repository.CustomerRepository;
 import com.api.artezans.exceptions.UserNotFoundException;
@@ -14,6 +13,7 @@ import com.api.artezans.users.repository.UserRepository;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -24,27 +24,41 @@ import java.util.Optional;
 @Service
 @RequiredArgsConstructor
 public class InitActors {
+
     private final UserRepository userRepository;
     private final ServiceProviderRepository serviceProviderRepository;
     private final CustomerRepository customerRepository;
-    private final BookingRepository bookingRepository;
     private final PasswordEncoder passwordEncoder;
-//    private ServiceProvider serviceProvider;
-//    private Address address;
+
+   
+    @Value("${artezan.admin.email}")
+    private String adminEmail;
+
+    @Value("${artezan.admin.password}")
+    private String adminPassword;
+
+    @Value("${artezan.customer.email}")
+    private String customerEmail;
+
+    @Value("${artezan.customer.password}")
+    private String customerPassword;
+
+    @Value("${artezan.provider.email}")
+    private String serviceProviderEmail;
+
+    @Value("${artezan.provider.password}")
+    private String serviceProviderPassword;
 
 
     @PostConstruct
     private void updateAdminPassword() {
-        final String adminEmail = "oneblockhq@gmail.com";
-
         Optional<User> user = userRepository.findUserByEmailAddressIgnoreCase(adminEmail);
 
         if (user.isPresent()) {
-
             User gottenUser = user.get();
 
-            if (!passwordEncoder.matches("@Oneblock12345!", gottenUser.getPassword())) {
-                gottenUser.setPassword(passwordEncoder.encode("@Oneblock12345!"));
+            if (!passwordEncoder.matches(adminPassword, gottenUser.getPassword())) {
+                gottenUser.setPassword(passwordEncoder.encode(adminPassword));
                 gottenUser.setAddress(getAddress());
                 userRepository.save(gottenUser);
                 log.info("<<<>Admin password encoded<>>>");
@@ -56,7 +70,6 @@ public class InitActors {
 
     @PostConstruct
     private void createCustomer() {
-        final String customerEmail = "glory@gmail.com";
         if (!userRepository.existsByEmailAddress(customerEmail)) {
             customerRepository.save(Customer.builder()
                     .user(User.builder()
@@ -64,7 +77,7 @@ public class InitActors {
                             .lastName("Charles")
                             .emailAddress(customerEmail)
                             .address(getAddress())
-                            .password(passwordEncoder.encode("@Glory12345!"))
+                            .password(passwordEncoder.encode(customerPassword))
                             .phoneNumber("08064332523")
                             .enabled(true)
                             .accountState(AccountState.VERIFIED)
@@ -81,7 +94,7 @@ public class InitActors {
                 .unitNumber("5")
                 .streetNumber("12")
                 .streetName("Lekki Phase 1")
-                .suburb("Lekki")
+                .city("Lekki")
                 .state("Lagos")
                 .postCode("219003")
                 .build();
@@ -90,7 +103,6 @@ public class InitActors {
 
     @PostConstruct
     private void createServiceProvider() {
-        final String serviceProviderEmail = "chiamaka@gmail.com";
         if (!userRepository.existsByEmailAddress(serviceProviderEmail)) {
             serviceProviderRepository.save(
                     ServiceProvider.builder()
@@ -99,7 +111,7 @@ public class InitActors {
                                     .lastName("Osinachi")
                                     .address(getAddress())
                                     .emailAddress(serviceProviderEmail)
-                                    .password(passwordEncoder.encode("@Chiamaka12345!"))
+                                    .password(passwordEncoder.encode(serviceProviderPassword))
                                     .phoneNumber("+2347165332523")
                                     .enabled(true)
                                     .accountState(AccountState.VERIFIED)

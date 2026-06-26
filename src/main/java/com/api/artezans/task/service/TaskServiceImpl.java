@@ -1,6 +1,5 @@
 package com.api.artezans.task.service;
 
-import com.api.artezans.config.security.SecuredUser;
 import com.api.artezans.exceptions.ArtezanException;
 import com.api.artezans.exceptions.UserNotAuthorizedException;
 import com.api.artezans.listings.data.models.Listing;
@@ -11,20 +10,18 @@ import com.api.artezans.notifications.app_notification.service.AppNotificationSe
 import com.api.artezans.task.data.dto.TaskRequest;
 import com.api.artezans.task.data.model.Task;
 import com.api.artezans.task.data.repo.TaskRepository;
+import com.api.artezans.users.models.Address;
 import com.api.artezans.users.models.User;
 import com.api.artezans.utils.ApiResponse;
-import lombok.AllArgsConstructor;
+import jakarta.transaction.Transactional;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
-import java.util.Collections;
-import java.util.List;
-import java.util.NoSuchElementException;
-import java.util.Objects;
-import java.util.stream.Collectors;
+import java.util.*;
 
 import static com.api.artezans.utils.ApiResponse.apiResponse;
 import static com.api.artezans.utils.ArtezanUtils.*;
@@ -32,125 +29,106 @@ import static com.api.artezans.utils.ArtezanUtils.*;
 
 @Slf4j
 @Service
-@AllArgsConstructor
+@RequiredArgsConstructor
 public class TaskServiceImpl implements TaskService {
+
     private final TaskRepository taskRepository;
     private final ListingService listingService;
     private final MultimediaService multimediaService;
     private final AppNotificationService appNotificationService;
 
-
     @Override
-    public ApiResponse postATask(TaskRequest request) {
-        try {
-            User user = currentUser();
-            Task newTask = createTask(user, request);
-            log.info("{} posting a task for {}", user.getFirstName(), request.taskServiceName());
+    @Transactional
+    public ApiResponse postATask(TaskRequest request, User user) {
+        Task newTask = createTask(user, request);
+        log.info("{} posting a task for {}", user.getFirstName(), request.taskServiceName());
 
-            List<AppNotification> notifications = createNotifications(user, request);
-            saveNotificationsAndTask(notifications, newTask);
-            log.info("{} successfully posted a task for {}", user.getFirstName(), request.taskServiceName());
-            return apiResponse(TASK_CREATED);
-        } catch (NoSuchElementException e) {
-            throw new ArtezanException(CUSTOMER_NOT_FOUND);
-        } catch (Exception exception) {
-            throw new ArtezanException(exception.getMessage());
-        }
+        List<AppNotification> notifications = createNotifications(user, request);
+        saveNotificationsAndTask(notifications, newTask);
+        log.info("{} successfully posted a task for {}", user.getFirstName(), request.taskServiceName());
+        return apiResponse(TASK_CREATED);
     }
 
     @Override
     public List<Task> findActiveTasks() {
-        return taskRepository.findAllUndeletedLists();
+        return taskRepository.findAllByIsActiveTrue();
     }
 
     @Override
     public List<Task> adminViewAllTasks() {
-        return taskRepository.findAll();
+        return taskRepository.findAll(); // intentionally includes inactive tasks
     }
 
     @Override
-    public ApiResponse deletePost(Long postId) {
+    public ApiResponse deactivateTask(Long postId, User user) {
         Task task = taskRepository.findById(postId)
                 .orElseThrow(() -> new ArtezanException("Task not found"));
-        User user = currentUser();
-        log.info("{} is trying to delete task: {}", user.getFirstName(), task.getId());
-        if (user.getId().equals(task.getPosterId())) {
-            task.setActive(false);
-            taskRepository.save(task);
-            return apiResponse("Task deleted successfully");
+
+        log.info("{} is trying to deactivate task: {}", user.getFirstName(), task.getId());
+
+        if (!user.getId().equals(task.getPoster().getId())) {
+            throw new UserNotAuthorizedException();
         }
-        throw new UserNotAuthorizedException();
+
+        task.setActive(false);
+        taskRepository.save(task);
+        return apiResponse("Task deactivated successfully");
     }
 
     private Task createTask(User user, TaskRequest request) {
         return Task.builder()
-                .posterId(user.getId())
+                .poster(user)
                 .taskServiceName(capitalized(request.taskServiceName()))
                 .taskDescription(request.taskDescription())
-                .userAddress(request.userAddress().isEmpty() ? user.getAddress().toString() : request.userAddress())
-                .postedAt(LocalDateTime.now())
+                .userAddress(StringUtils.hasText(request.userAddress())
+                        ? request.userAddress()
+                        : Optional.ofNullable(user.getAddress())
+                        .map(Address::toString)
+                        .orElse(""))
                 .isActive(true)
                 .taskDates(request.taskDate())
                 .customerBudget(request.customerBudget())
-                .taskImage(uploadImage(request.taskImage()))
+                .taskImageUrl(uploadImage(request.taskImage()))
                 .build();
     }
 
     private String uploadImage(MultipartFile image) {
-        String imageUrl;
         try {
-            imageUrl = multimediaService.upload(image);
+            return multimediaService.upload(image);
         } catch (Exception ex) {
-            throw new ArtezanException(ex.getMessage());
+            throw new ArtezanException("Image upload failed: " + ex.getMessage());
         }
-        return imageUrl;
     }
 
     private List<AppNotification> createNotifications(User user, TaskRequest request) {
-        LocalDateTime currentTime = LocalDateTime.now();
-        List<Listing> listings = listingService.findListingByServiceName(request.taskServiceName());
+        List<Listing> listings = listingService.findAllListingsByServiceName(request.taskServiceName());
+
         if (listings.isEmpty()) {
-            return Collections.singletonList(AppNotification.builder()
-                    .notificationTime(LocalDateTime.now())
-                    .message("A new task for " + request.taskServiceName() +
-                            " service has just been posted by " +
-                            user.getFirstName())
-                    .build());
-        } else {
-            return listings.parallelStream()
-                    .filter(listing -> !listing.getServiceProvider().getUser().equals(user))
-                    .map(list -> notifyServiceProvider(
-                            list.getServiceProvider().getUser(), request.taskServiceName(), currentTime
-                    ))
-                    .collect(Collectors.toList());
+            log.info("No service providers found for service: {}", request.taskServiceName());
+            return Collections.emptyList();
         }
+
+        //notify all service providers with peculiar listing
+        return listings.stream()
+                .filter(listing -> !listing.getServiceProvider().getUser().equals(user))
+                .map(listing -> notifyServiceProvider(
+                        listing.getServiceProvider().getUser(),
+                        request.taskServiceName(),
+                        LocalDateTime.now()
+                ))
+                .toList();
     }
 
-    private AppNotification notifyServiceProvider(User user, String serviceName, LocalDateTime currentTime) {
-        AppNotification notification = new AppNotification();
-        notification.setMessage("You have a new " + serviceName + " request");
-        notification.setNotificationTime(currentTime);
-        notification.setRecipient(user);
-        return notification;
+    private AppNotification notifyServiceProvider(User user, String serviceName, LocalDateTime time) {
+        return AppNotification.builder()
+                .message("You have a new " + serviceName + " request")
+                .notificationTime(time)
+                .recipient(user)
+                .build();
     }
 
     private void saveNotificationsAndTask(List<AppNotification> notifications, Task newTask) {
         appNotificationService.saveNotifications(notifications);
         taskRepository.save(newTask);
-    }
-
-
-    private User currentUser() {
-        try {
-            SecuredUser securedUser = (SecuredUser) Objects.requireNonNull(SecurityContextHolder
-                            .getContext()
-                            .getAuthentication())
-                    .getPrincipal();
-
-            assert securedUser != null;
-            return securedUser.getUser();
-        } catch (Exception e) {
-            throw new ArtezanException("User not authenticated");
-        }
     }
 }

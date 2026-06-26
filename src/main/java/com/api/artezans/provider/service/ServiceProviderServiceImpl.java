@@ -1,7 +1,5 @@
 package com.api.artezans.provider.service;
 
-import com.api.artezans.authentication.services.AuthService;
-import com.api.artezans.config.security.SecuredUser;
 import com.api.artezans.exceptions.ArtezanException;
 import com.api.artezans.exceptions.UserNotFoundException;
 import com.api.artezans.listings.data.models.Listing;
@@ -10,17 +8,18 @@ import com.api.artezans.multimedia.MultimediaService;
 import com.api.artezans.notifications.app_notification.model.AppNotification;
 import com.api.artezans.notifications.app_notification.service.AppNotificationService;
 import com.api.artezans.payment.stripe.dto.CreateCustomerRequest;
-import com.api.artezans.payment.stripe.services.StripeService;
+import com.api.artezans.payment.stripe.services.StripeServiceImpl;
 import com.api.artezans.provider.data.dto.ServiceProviderRegistrationRequest;
 import com.api.artezans.provider.data.dto.ServiceProviderUpdateRequest;
-import com.api.artezans.provider.data.model.IdType;
+import com.api.artezans.provider.data.model.enums.IdType;
 import com.api.artezans.provider.data.model.ServiceProvider;
 import com.api.artezans.provider.data.model.UserIdentity;
 import com.api.artezans.provider.data.repository.ServiceProviderRepository;
 import com.api.artezans.provider.data.repository.UserIdentityRepository;
 import com.api.artezans.task.data.model.Task;
 import com.api.artezans.task.service.ServiceProviderTaskService;
-import com.api.artezans.users.models.Address;
+import com.api.artezans.users.dto.AddressMapper;
+import com.api.artezans.users.dto.UserMailInfo;
 import com.api.artezans.users.models.User;
 import com.api.artezans.users.models.enums.AccountState;
 import com.api.artezans.users.models.enums.Role;
@@ -31,21 +30,19 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.fge.jsonpatch.JsonPatch;
 import com.github.fge.jsonpatch.JsonPatchException;
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
-import java.util.stream.Collectors;
 
 import static com.api.artezans.utils.ApiResponse.apiResponse;
 import static com.api.artezans.utils.ArtezanUtils.SERVICE_PROVIDER;
@@ -60,21 +57,24 @@ public class ServiceProviderServiceImpl implements ServiceProviderService {
     private final ServiceProviderRepository serviceProviderRepository;
     private final UserIdentityRepository userIdentityRepository;
     private final AppNotificationService appNotificationService;
-    private final AuthService authenticationService;
     private final MultimediaService multimediaService;
     private final PasswordEncoder passwordEncoder;
-    private final StripeService stripeService;
+    private final StripeServiceImpl stripeServiceImpl;
     private final ObjectMapper objectMapper;
     private final UserService userService;
+    private final AddressMapper addressMapper;
 
     @Override
     @Transactional(propagation = Propagation.REQUIRED)
-    public ApiResponse register(
-            ServiceProviderRegistrationRequest request, HttpServletRequest httpRequest) {
+    public ApiResponse registerServiceProvider(ServiceProviderRegistrationRequest request) {
+
         String emailAddress = request.getEmailAddress();
-        userService.validateExistence(emailAddress);
+
+        userService.validateUserExistenceByEmail(emailAddress);
+
         request.setFirstName(capitalized(request.getFirstName()));
         request.setLastName(capitalized(request.getLastName()));
+
         ServiceProvider serviceProvider = ServiceProvider.builder()
                 .user(User.builder()
                         .emailAddress(emailAddress)
@@ -88,19 +88,22 @@ public class ServiceProviderServiceImpl implements ServiceProviderService {
                         .accountState(AccountState.NOT_VERIFIED)
                         .build())
                 .build();
-        boolean invalidIdRequest = request.getIdNumber() == null
-                || request.getIdNumber().isEmpty() || request.getIdNumber().length() < 6;
-        if (!invalidIdRequest) {
+
+
+        String idNumber = request.getIdNumber();
+        if (StringUtils.hasText(idNumber) && idNumber.trim().length() >= 6) {
             serviceProvider.setUserIdentity(
                     UserIdentity.builder()
-                            .idNumber(request.getIdNumber())
+                            .idNumber(idNumber.trim())
                             .build()
             );
         }
+
         try {
-            userService.sendVerificationMail(serviceProvider.getUser());
+            userService.sendVerificationMail(new UserMailInfo(serviceProvider.getUser()));
             serviceProviderRepository.save(serviceProvider);
             return apiResponse("Successful! Please check your email to complete registration");
+
         } catch (RuntimeException ex) {
             throw new ArtezanException("Registration failed");
         }
@@ -114,43 +117,26 @@ public class ServiceProviderServiceImpl implements ServiceProviderService {
                 .phone(registrationRequest.getPhoneNumber())
                 .description(SERVICE_PROVIDER)
                 .build();
-        return stripeService.createCustomer(request);
-    }
-
-    @Override
-    public void save(ServiceProvider serviceProvider) {
-        serviceProviderRepository.save(serviceProvider);
+        return stripeServiceImpl.createCustomer(request);
     }
 
 
     @Override
     @Transactional(propagation = Propagation.REQUIRED)
     public ApiResponse completeServiceProviderRegistration(String token, ServiceProviderUpdateRequest updateRequest) {
+
         User user = userService.getUserFromToken(token);
         ServiceProvider serviceProvider = findServiceProviderByUserEmailAddress(user.getEmailAddress());
+
         if (serviceProvider.getUser().getAddress() == null) {
-            serviceProvider.getUser().setAddress(Address.builder()
-                    .streetName(capitalized(updateRequest.streetName()))
-                    .streetNumber(updateRequest.streetNumber())
-                    .suburb(capitalized(updateRequest.suburb()))
-                    .state(capitalized(updateRequest.state()))
-                    .postCode(updateRequest.postCode())
-                    .unitNumber(updateRequest.unitNumber())
-                    .build());
+            serviceProvider.getUser().setAddress(addressMapper.mapToAddress(updateRequest)); //give address
             UserIdentity userIdentity;
             if (serviceProvider.getUserIdentity() == null) {
                 userIdentity = getNewUserIdentity(updateRequest);
             } else {
-                userIdentity = getExistedUserIdentity(serviceProvider, updateRequest);
+                userIdentity = getExistedUserIdentity(serviceProvider.getUserIdentity().getIdNumber(), updateRequest);
             }
 
-
-//            userIdentity.setIdType(updateRequest.getIdType());
-//            try {
-//                userIdentity.setIdImage(multimediaService.upload(updateRequest.getIdImage()));
-//            } catch (Exception e) {
-//                throw new TaskHubException("an error occurred uploading your ID Image");
-//            }
             serviceProvider.setUserIdentity(userIdentity);
             serviceProvider.getUser().setEnabled(true);
             serviceProviderRepository.save(serviceProvider);
@@ -159,40 +145,32 @@ public class ServiceProviderServiceImpl implements ServiceProviderService {
     }
 
     private UserIdentity getNewUserIdentity(ServiceProviderUpdateRequest updateRequest) {
-        boolean invalidIdNumber = updateRequest.idNumber() == null || updateRequest.idNumber().isEmpty();
-        if (!invalidIdNumber) {
-            UserIdentity userIdentity = new UserIdentity();
-            userIdentity.setIdNumber(updateRequest.idNumber());
-            userIdentity.setIdType(getIdType(updateRequest.idType()));
+
+
+        if (StringUtils.hasText(updateRequest.idNumber()) && updateRequest.idNumber().trim().length() >= 6) {
+
+            UserIdentity userIdentity = UserIdentity.builder()
+                    .idNumber(updateRequest.idNumber())
+                    .idType(IdType.fromString(updateRequest.idType()))
+                    .build();
             try {
-                userIdentity.setIdImage(multimediaService.upload(updateRequest.idImage()));
+                userIdentity.setIdImageUrl(multimediaService.upload(updateRequest.idImage()));
             } catch (Exception e) {
                 throw new ArtezanException("an error occurred uploading your ID Image");
             }
             return userIdentity;
         }
+
         throw new ArtezanException("Id Number cannot be blank or empty");
     }
 
-    private IdType getIdType(String idType) {
-        IdType type = null;
-        switch (idType) {
-            case "Medicare Card" -> type = IdType.MEDICARE_CARD;
-            case "International Passport" -> type = IdType.INTERNATIONAL_PASSPORT;
-            case "Photo ID" -> type = IdType.PHOTO_ID;
-            case "Driver's Licence" -> type = IdType.DRIVERS_LICENSE;
-        }
-        return type;
-    }
-
-    private UserIdentity getExistedUserIdentity(
-            ServiceProvider serviceProvider, ServiceProviderUpdateRequest updateRequest) {
-        UserIdentity userIdentity = userIdentityRepository.findByIdNumber(
-                        serviceProvider.getUserIdentity().getIdNumber())
+    private UserIdentity getExistedUserIdentity(String idNumber, ServiceProviderUpdateRequest updateRequest) {
+        UserIdentity userIdentity = userIdentityRepository.findByIdNumber(idNumber)
                 .orElseThrow(ArtezanException::new);
-        userIdentity.setIdType(getIdType(updateRequest.idType()));
+        
+        userIdentity.setIdType(IdType.fromString(updateRequest.idType()));
         try {
-            userIdentity.setIdImage(multimediaService.upload(updateRequest.idImage()));
+            userIdentity.setIdImageUrl(multimediaService.upload(updateRequest.idImage()));
         } catch (Exception e) {
             throw new ArtezanException("an error occurred uploading your ID Image");
         }
@@ -200,13 +178,13 @@ public class ServiceProviderServiceImpl implements ServiceProviderService {
     }
 
     @Override
-    public ServiceProvider currentServiceProvider() {
-        return findServiceProviderByUserEmailAddress(currentUser().getEmailAddress());
+    public ServiceProvider currentServiceProvider(String emailAddress) {
+        return findServiceProviderByUserEmailAddress(emailAddress);
     }
 
     @Override
-    public ApiResponse uploadProfilePicture(MultipartFile image) {
-        return userService.uploadProfilePicture(image);
+    public ApiResponse uploadProfilePicture(MultipartFile image, User user) {
+        return userService.uploadProfilePicture(image, user);
     }
 
     private ServiceProvider findServiceProviderByUserEmailAddress(String emailAddress) {
@@ -216,8 +194,8 @@ public class ServiceProviderServiceImpl implements ServiceProviderService {
 
     @Override
     @Transactional(propagation = Propagation.REQUIRED)
-    public ApiResponse updateServiceProviderInfo(JsonPatch updatePayload) {
-        ServiceProvider serviceProvider = currentServiceProvider();
+    public ApiResponse updateServiceProviderInfo(JsonPatch updatePayload, String emailAddress) {
+        ServiceProvider serviceProvider = currentServiceProvider(emailAddress);
         //Service Provider Object to node
         JsonNode node = objectMapper.convertValue(serviceProvider, JsonNode.class);
         try {
@@ -235,45 +213,30 @@ public class ServiceProviderServiceImpl implements ServiceProviderService {
     }
 
     @Override
-    public boolean isExist(String email) {
+    public boolean validateServiceProviderExistence(String email) {
         return serviceProviderRepository.existsByUserEmailAddressIgnoreCase(email);
     }
 
-
     @Override
-    public List<Task> serviceProviderViewPeculiarTasks() {
+    public List<Task> serviceProviderViewPeculiarTasks(String emailAddress) {
         return serviceProviderTaskService
-                .serviceProviderViewPeculiarTasks(getServiceNames());
+                .serviceProviderViewPeculiarTasks(getServiceNames(emailAddress));
     }
 
     @Override
-    public List<AppNotification> serviceProviderNotifications() {
+    public List<AppNotification> serviceProviderNotifications(String emailAddress) {
         return appNotificationService.findServiceProviderNotifications(
-                currentServiceProvider().getUser().getId()
+                currentServiceProvider(emailAddress).getUser().getId()
         );
     }
 
-    private List<String> getServiceNames() {
-        List<Listing> serviceProviderListings = serviceProviderListingService.serviceProviderListings(
-                currentServiceProvider().getId()
-        );
-        return serviceProviderListings.stream()
+    private List<String> getServiceNames(String emailAddress) {
+        return serviceProviderListingService
+                .serviceProviderListings(currentServiceProvider(emailAddress).getId())
+                .stream()
                 .map(Listing::getServiceName)
-                .collect(Collectors.toList());
-    }
-
-    private User currentUser() {
-        try {
-            SecuredUser securedUser = (SecuredUser) Objects.requireNonNull(
-                    SecurityContextHolder
-                            .getContext()
-                            .getAuthentication())
-                    .getPrincipal();
-
-            assert securedUser != null;
-            return securedUser.getUser();
-        } catch (Exception e) {
-            throw new ArtezanException("User not authenticated");
-        }
+                .filter(Objects::nonNull)
+                .distinct()
+                .toList();
     }
 }

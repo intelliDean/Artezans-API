@@ -1,6 +1,7 @@
 package com.api.artezans.booking.service;
 
 import com.api.artezans.booking.data.dto.BookingRequest;
+import com.api.artezans.booking.data.dto.RejectionRequest;
 import com.api.artezans.config.security.SecuredUser;
 import com.api.artezans.payment.stripe.dto.Response;
 import com.api.artezans.users.models.User;
@@ -12,18 +13,24 @@ public interface BookingService {
 
     ApiResponse bookService(BookingRequest request, SecuredUser user);
 
-    ApiResponse acceptProposal(Long bookingId);
+    ApiResponse acceptProposal(Long bookingId, SecuredUser securedUser);
 
-    ApiResponse rejectProposal(Long bookingId);
+    ApiResponse rejectProposal(Long bookingId, SecuredUser securedUser);
 
-    ApiResponse completeTask(Long bookingId);
+    ApiResponse completeTask(Long bookingId, SecuredUser securedUser);
 
-    Response createPaymentIntentWithStripe(Long bookingId, User user) throws StripeException;
+    Response createPaymentIntentWithStripe(Long bookingId, User user);
+
     ApiResponse authorizePaymentWithPaypal(Long bookingId, User user);
+
     Payment executePaymentWithPaypal(String paymentId, String payerId);
+
     ApiResponse sendServiceProviderNotificationAfterPayment(Long bookingId);
-    ApiResponse customerAcceptService(Long bookingId);
-    ApiResponse customerRejectService(Long bookingId, String reason);
+
+    ApiResponse customerAcceptService(Long bookingId, SecuredUser securedUser);
+
+    ApiResponse customerRejectService(RejectionRequest resuest, SecuredUser securedUser);
+
     ApiResponse updateBookingAfterPayment(Long bookingId);
 
     ApiResponse generateInvoice(Long bookingId);

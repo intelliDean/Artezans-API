@@ -1,5 +1,6 @@
 package com.api.artezans.customer.services;
 
+import com.api.artezans.config.SecurityConfig;
 import com.api.artezans.config.security.SecuredUser;
 import com.api.artezans.customer.data.dto.request.CustomerRegistrationRequest;
 import com.api.artezans.customer.data.dto.request.CustomerUpdateRequest;
@@ -9,7 +10,8 @@ import com.api.artezans.exceptions.ArtezanException;
 import com.api.artezans.exceptions.UserNotFoundException;
 import com.api.artezans.payment.stripe.dto.CreateCustomerRequest;
 import com.api.artezans.payment.stripe.services.StripeService;
-import com.api.artezans.users.models.Address;
+import com.api.artezans.users.dto.AddressMapper;
+import com.api.artezans.users.dto.UserMailInfo;
 import com.api.artezans.users.models.User;
 import com.api.artezans.users.models.enums.AccountState;
 import com.api.artezans.users.models.enums.Role;
@@ -45,13 +47,13 @@ public class CustomerServiceImpl implements CustomerService {
     private final StripeService stripeService;
     private final PasswordEncoder passwordEncoder;
     private final ObjectMapper objectMapper;
+    private final AddressMapper addressMapper;
 
     @Override
     @Transactional(propagation = Propagation.REQUIRED)
-    public ApiResponse register(
-            CustomerRegistrationRequest registrationRequest)  {
+    public ApiResponse register(CustomerRegistrationRequest registrationRequest) {
         String emailAddress = registrationRequest.getEmailAddress();
-        userService.validateExistence(emailAddress);
+        userService.validateUserExistenceByEmail(emailAddress);
         registrationRequest.setFirstName(capitalized(registrationRequest.getFirstName()));
         registrationRequest.setLastName(capitalized(registrationRequest.getLastName()));
         Customer customer = Customer.builder()
@@ -59,7 +61,7 @@ public class CustomerServiceImpl implements CustomerService {
                         .firstName(registrationRequest.getFirstName())
                         .lastName(registrationRequest.getLastName())
                         .phoneNumber(registrationRequest.getPhoneNumber())
-                        //  .stripeId(registerCustomerOnStripe(registrationRequest)) ////todo: will uncomment this when to go live
+                        //.stripeId(registerCustomerOnStripe(registrationRequest)) //todo: will uncomment this when to go live
                         .emailAddress(emailAddress)
                         .enabled(false)
                         .password(passwordEncoder.encode(registrationRequest.getPassword()))
@@ -68,7 +70,7 @@ public class CustomerServiceImpl implements CustomerService {
                         .build())
                 .build();
         try {
-            userService.sendVerificationMail(customer.getUser());
+            userService.sendVerificationMail(new UserMailInfo(customer.getUser()));
             customerRepository.save(customer);
             return apiResponse("Successful! Please check your email to complete registration");
         } catch (RuntimeException ex) {
@@ -91,47 +93,48 @@ public class CustomerServiceImpl implements CustomerService {
     }
 
     @Override
-    public Customer currentCustomer(SecuredUser user) {
-        return findCustomerByUserEmailAddress(user.getEmailAddress());
-    }
-
-    public Customer findCustomerByUserEmailAddress(String email) {
-        return customerRepository.findCustomerByUserEmailAddress(email)
+    public Customer currentCustomer(String emailAddress) {
+        return customerRepository.findCustomerByUserEmailAddress(emailAddress)
                 .orElseThrow(UserNotFoundException::new);
     }
 
+//    private Customer findCustomerByUserEmailAddress(String email) {
+//        return customerRepository.findCustomerByUserEmailAddress(email)
+//                .orElseThrow(UserNotFoundException::new);
+//    }
+
     @Override
     public ApiResponse customerCompleteRegistration(String token, CustomerUpdateRequest updateRequest) {
-        Customer customer = findCustomerByUserEmailAddress(
-                userService.getUserFromToken(token).getEmailAddress());
+        Customer customer = currentCustomer(userService.getUserFromToken(token).getEmailAddress());
+
         if (customer.getUser().getAddress() == null) {
-            customer.getUser().setAddress(getAddress(updateRequest));
+            customer.getUser().setAddress(addressMapper.mapToAddress(updateRequest));
             customer.getUser().setEnabled(true);
             customerRepository.save(customer);
         }
         return apiResponse("Your profile has been updated successfully");
     }
 
-    private static Address getAddress(CustomerUpdateRequest updateRequest) {
-        return Address.builder()
-                .streetName(capitalized(updateRequest.streetName()))
-                .streetNumber(updateRequest.streetNumber())
-                .suburb(capitalized(updateRequest.suburb()))
-                .state(capitalized(updateRequest.state()))
-                .postCode(updateRequest.postCode())
-                .unitNumber(updateRequest.unitNumber())
-                .build();
+//    private static Address getAddress(CustomerUpdateRequest updateRequest) {
+//        return Address.builder()
+//                .streetName(capitalized(updateRequest.streetName()))
+//                .streetNumber(updateRequest.streetNumber())
+//                .city(capitalized(updateRequest.city()))
+//                .state(capitalized(updateRequest.state()))
+//                .postCode(updateRequest.postCode())
+//                .unitNumber(updateRequest.unitNumber())
+//                .build();
+//    }
+
+    @Override
+    public ApiResponse uploadProfilePicture(MultipartFile image, User user) {
+        return userService.uploadProfilePicture(image, user);
     }
 
     @Override
-    public ApiResponse uploadProfilePicture(MultipartFile image) {
-        return userService.uploadProfilePicture(image);
-    }
+    public ApiResponse updateCustomerInfo(JsonPatch updatePayload, SecuredUser currentUser) {
+        Customer customer = currentCustomer(currentUser.getUsername());
 
-    @Override
-    public ApiResponse updateCustomerInfo(JsonPatch updatePayload, SecuredUser user) {
-        Customer customer = currentCustomer(user);
-        //Passenger Object to node
         JsonNode node = objectMapper.convertValue(customer, JsonNode.class);
         try {
             //apply patch

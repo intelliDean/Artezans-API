@@ -1,22 +1,36 @@
 package com.api.artezans.gateway.customer;
 
-public class CustomerUtil {
-    public final static String REGISTER_DESC = "When a customer wants to register on the platform, he calls this endpoint with required" +
-            " credentials. If the registration is successful, a verification mail is sent to the user";
-    public final static String REGISTER_SUM = "Register customer";
-    public final static String REGISTER_OP_ID = "register.customer";
-    public final static String COMP_REG_DESC = "After a customer is registered, verified their email and successfully logged in," +
-            "the user must complete their registration by calling this endpoint and providing all details." +
-            "Note: access token from login must be provided to successfully call this endpoint";
-    public final static String COMP_REG_SUM = "Customer complete registration";
-    public final static String COMP_REG_OP_ID = "customer.complete.reg";
-    public final static String PROF_PIC_DESC = "When a customer want to update his profile picture, " +
-            "he does that by calling this endpoint with his image file";
-    public final static String PROF_PIC_SUM = "Customer uploads profile picture";
-    public final static String PROF_PIC_OP_ID = "customer.profile.picture";
-    public final static String UPDATE_DESC = "When a user wants to update a particular field, he does that calling this endpoint." +
-            "Note: the payload for this endpoint is quite unique";
-    public final static String UPDATE_SUM = "Customer updates profile";
-    public final static String UPDATE_OP_ID = "customer.update";
+public interface CustomerUtil {
 
+    // Register
+    String REGISTER_SUM = "Register customer";
+    String REGISTER_DESC = """
+            When a customer wants to register on the platform, they call this endpoint with the required
+            credentials. If registration is successful, a verification email is sent to the user.
+            """;
+    String REGISTER_OP_ID = "register.customer";
+
+    // Complete registration
+    String COMP_REG_SUM = "Customer completes registration";
+    String COMP_REG_DESC = """
+            After a customer has registered, verified their email, and successfully logged in,
+            they must complete their registration by calling this endpoint and providing all required details.
+            Note: the access token from login must be included to call this endpoint.
+            """;
+    String COMP_REG_OP_ID = "customer.complete.reg";
+
+    // Profile picture
+    String PROF_PIC_SUM = "Customer uploads profile picture";
+    String PROF_PIC_DESC = """
+            When a customer wants to update their profile picture,
+            they do so by calling this endpoint with their image file.""";
+    String PROF_PIC_OP_ID = "customer.profile.picture";
+
+    // Update profile
+    String UPDATE_SUM = "Customer updates profile";
+    String UPDATE_DESC = """
+            When a customer wants to update a particular field in their profile, they call this endpoint.
+            Note: the payload for this endpoint is unique — refer to the schema for details.
+            """;
+    String UPDATE_OP_ID = "customer.update";
 }

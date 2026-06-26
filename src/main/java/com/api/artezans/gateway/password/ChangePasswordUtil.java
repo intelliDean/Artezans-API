@@ -1,15 +1,21 @@
 package com.api.artezans.gateway.password;
 
-public class ChangePasswordUtil {
-    public final static String INIT_DESC = "When a user wants to change his password, he initiates the process by " +
-            "first calling this endpoint with his old password and new password. This will send the user an email" +
-            " to confirm the change of password.  (tested✅)";
-    public final static String INIT_SUM = "Initiate change of password";
-    public final static String INIT_OP_ID = "initiate.password";
-    public final static String CHANGE_DESC = "The email sent to the user after initiating the change of password process " +
-            "contains a link, when the user clicks on the link, the link redirects the user to this " +
-            "endpoint, and confirms the change of password if the link is valid.  (tested✅)";
-    public final static String CHANGE_SUM = "change password";
-    public final static String CHANGE_OP_ID = "change.password";
+public interface ChangePasswordUtil {
 
+    // Initiate password change
+    String INIT_SUM = "Initiate change of password";
+    String INIT_DESC = """
+            When a user wants to change their password, they initiate the process by calling this endpoint
+            with their old password and new password. A confirmation email is then sent to the user.  (tested ✅)
+            """;
+    String INIT_OP_ID = "initiate.password";
+
+    // Confirm password change
+    String CHANGE_SUM = "Confirm password change";
+    String CHANGE_DESC = """
+            The email sent after initiating the change of password contains a confirmation link.
+            When the user clicks the link, they are redirected here and the
+            change is confirmed if the link is valid.  (tested ✅)
+            """;
+    String CHANGE_OP_ID = "change.password";
 }

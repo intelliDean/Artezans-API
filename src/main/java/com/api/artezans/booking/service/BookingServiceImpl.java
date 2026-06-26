@@ -2,6 +2,7 @@ package com.api.artezans.booking.service;
 
 import com.api.artezans.booking.data.dto.BookingRequest;
 import com.api.artezans.booking.data.dto.InvoiceResponse;
+import com.api.artezans.booking.data.dto.RejectionRequest;
 import com.api.artezans.booking.data.model.Booking;
 import com.api.artezans.booking.data.model.BookingAgreement;
 import com.api.artezans.booking.data.model.enums.AgreementStatus;
@@ -10,23 +11,24 @@ import com.api.artezans.booking.data.model.enums.BookingState;
 import com.api.artezans.booking.data.repository.BookingRepository;
 import com.api.artezans.config.security.SecuredUser;
 import com.api.artezans.exceptions.ArtezanException;
-import com.api.artezans.listings.data.enums.AvailableDays;
+import com.api.artezans.exceptions.UserNotAuthorizedException;
 import com.api.artezans.listings.data.models.Listing;
 import com.api.artezans.listings.services.ListingService;
 import com.api.artezans.notifications.app_notification.model.AppNotification;
 import com.api.artezans.notifications.app_notification.service.AppNotificationService;
 import com.api.artezans.notifications.mail.MailService;
-import com.api.artezans.notifications.mail.dto.EmailRequest;
-import com.api.artezans.notifications.mail.dto.MailInfo;
+import com.api.artezans.notifications.dto.EmailRequest;
+import com.api.artezans.notifications.dto.MailInfo;
 import com.api.artezans.payment.paypal.PaypalService;
 import com.api.artezans.payment.paypal.dto.OrderDetail;
 import com.api.artezans.payment.stripe.dto.PaymentIntentRequest;
 import com.api.artezans.payment.stripe.dto.Response;
-import com.api.artezans.payment.stripe.services.StripeService;
+import com.api.artezans.payment.stripe.services.StripeServiceImpl;
 import com.api.artezans.users.models.User;
 import com.api.artezans.utils.ApiResponse;
 import com.paypal.api.payments.Payment;
 import com.paypal.base.rest.PayPalRESTException;
+import com.stripe.exception.StripeException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -41,6 +43,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static com.api.artezans.booking.data.model.enums.BookingStage.PAID;
 import static com.api.artezans.booking.data.model.enums.BookingState.COMPLETED;
@@ -54,30 +57,49 @@ import static org.springframework.transaction.annotation.Propagation.REQUIRED;
 @Service
 @RequiredArgsConstructor
 public class BookingServiceImpl implements BookingService {
+
     @Value("${success.url}")
     private String successUrl;
+
     @Value("${cancel.url}")
     private String cancelUrl;
+
     @Value("${charges}")
     private double charges;
+
     private final AppNotificationService appNotificationService;
     private final MailService mailService;
     private final BookingRepository bookingRepository;
     private final TemplateEngine templateEngine;
     private final ListingService listingService;
-    private final StripeService stripeService;
+    private final StripeServiceImpl stripeServiceImpl;
     private final PaypalService paypalService;
-    private final Context context;
+
+    // NOTE: Context is NOT injected as a shared bean — a new instance is created per
+    // email send to prevent race conditions and variable bleed in concurrent requests.
+
+    // ---------------------------------------------------------------------------
+    // Booking lifecycle
+    // ---------------------------------------------------------------------------
 
     @Override
+    @Transactional(propagation = REQUIRED)
     public ApiResponse bookService(BookingRequest request, SecuredUser securedUser) {
+
         LocalTime start = LocalTime.of(request.bookFrom().hour(), request.bookFrom().minute());
         LocalTime end = LocalTime.of(request.bookTo().hour(), request.bookTo().minute());
-        if (start.isAfter(end)) throw new ArtezanException("Time is incoherent");
+        if (start.isAfter(end)) {
+            throw new ArtezanException("Booking start time cannot be after end time");
+        }
 
         Listing listing = listingService.userFindsListingById(request.listingId());
-        Set<LocalDate> dates = getDates(request.bookDates(), listing);
-        BigDecimal totalCost = getTotalCost(dates, start, end, listing);
+        if (!listing.isAvailable()) {
+            throw new ArtezanException("This listing is currently unavailable for booking");
+        }
+
+        Set<LocalDate> dates = validateAndExtractDates(request.bookDates(), listing);
+        BigDecimal totalCost = calculateTotalCost(dates, start, end, listing);
+
         Booking booking = Booking.builder()
                 .bookFrom(start)
                 .bookTo(end)
@@ -89,140 +111,117 @@ public class BookingServiceImpl implements BookingService {
                 .accepted(false)
                 .totalCost(totalCost)
                 .build();
+
         bookingRepository.save(booking);
-        appNotificationService.saveNotifications(getAppNotification(listing));
-        return apiResponse("Booking Proposal sent to Service");
-    }
-
-    private static AppNotification getAppNotification(Listing listing) {
-        return AppNotification.builder()
-                .notificationTime(LocalDateTime.now())
-                .recipient(listing.getServiceProvider().getUser())
-                .message("You have a new " + listing.getServiceName() + " booking")
-                .build();
+        appNotificationService.saveNotifications(buildNewBookingNotification(listing));
+        log.info("Booking proposal [id={}] created for listing [id={}]", booking.getId(), listing.getId());
+        return apiResponse("Booking proposal sent to service provider");
     }
 
     @Override
-    public ApiResponse acceptProposal(Long bookingId) {
+    public ApiResponse acceptProposal(Long bookingId, SecuredUser securedUser) {
         Booking booking = getBookingById(bookingId);
-        if (booking.getBookingStage().equals(BookingStage.PROPOSED)) {
-            booking.setAccepted(true);
-            booking.setBookingStage(BookingStage.ACCEPTED);
-            booking.setBookState(OPEN);
-            booking.setUpdatedAt(LocalDateTime.now());
-            createNotification(booking, ACCEPTED);
-            bookingRepository.save(booking);
-            return apiResponse("Booking Proposal accepted");
-        }
-        throw new ArtezanException("Not a proposal");
-    }
 
-    private Booking getBookingById(Long bookingId) {
-        return bookingRepository.findById(bookingId)
-                .orElseThrow(() ->
-                        new ArtezanException("Booking could not be found"));
+        assertIsServiceProviderOfBooking(booking, securedUser,
+                "Only the service provider can accept a booking proposal");
+
+        if (!booking.getBookingStage().equals(BookingStage.PROPOSED)) {
+            throw new ArtezanException("Booking is not in a proposed state");
+        }
+        booking.setAccepted(true);
+        booking.setBookingStage(BookingStage.ACCEPTED);
+        booking.setBookState(OPEN);
+        booking.setUpdatedAt(LocalDateTime.now());
+        createUserNotification(booking, ACCEPTED);
+        bookingRepository.save(booking);
+        log.info("Booking [id={}] accepted by provider [email={}]", bookingId, securedUser.getUsername());
+        return apiResponse("Booking proposal accepted");
     }
 
     @Override
-    public ApiResponse rejectProposal(Long bookingId) {
+    public ApiResponse rejectProposal(Long bookingId, SecuredUser securedUser) {
         Booking booking = getBookingById(bookingId);
-        if (booking.getBookingStage().equals(BookingStage.PROPOSED)) {
-            booking.setAccepted(false);
-            booking.setBookingStage(BookingStage.REJECTED);
-            booking.setBookState(BookingState.CANCELLED);
-            booking.setUpdatedAt(LocalDateTime.now());
-            createNotification(booking, REJECTED);
-            bookingRepository.save(booking);
-            return apiResponse("Booking proposal rejected");
+
+        assertIsServiceProviderOfBooking(booking, securedUser,
+                "Only the service provider can reject a booking proposal");
+
+        if (!booking.getBookingStage().equals(BookingStage.PROPOSED)) {
+            throw new ArtezanException("Booking is not in a proposed state");
         }
-        throw new ArtezanException("Booking proposal rejected");
+        booking.setAccepted(false);
+        booking.setBookingStage(BookingStage.REJECTED);
+        booking.setBookState(BookingState.CANCELLED);
+        booking.setUpdatedAt(LocalDateTime.now());
+        createUserNotification(booking, REJECTED);
+        bookingRepository.save(booking);
+        log.info("Booking [id={}] rejected by provider [email={}]", bookingId, securedUser.getUsername());
+        return apiResponse("Booking proposal rejected");
     }
 
     @Override
     @Transactional(propagation = REQUIRED)
-    public ApiResponse completeTask(Long bookingId) {
+    public ApiResponse completeTask(Long bookingId, SecuredUser securedUser) {
         Booking booking = getBookingById(bookingId);
-        if (booking.getBookState().equals(OPEN) &&
-                booking.getBookingStage().equals(PAID)) {
-            booking.setBookState(COMPLETED);
-            booking.setUpdatedAt(LocalDateTime.now());
-            notifyCustomer(booking);
-            bookingRepository.save(booking);
-            return apiResponse("Service provider delivered service");
+
+        assertIsServiceProviderOfBooking(booking, securedUser,
+                "Only the service provider can mark a task as complete");
+
+        if (!booking.getBookState().equals(OPEN) || !booking.getBookingStage().equals(PAID)) {
+            throw new ArtezanException("Task is either not an open booking or has not been paid for");
         }
-//        booking.setBookingStage(PAID);
-        throw new ArtezanException("Task is either not an open booking or the booking is not yet paid for");
+        booking.setBookState(COMPLETED);
+        booking.setUpdatedAt(LocalDateTime.now());
+        notifyCustomerOfCompletion(booking);
+        bookingRepository.save(booking);
+        log.info("Booking [id={}] marked as completed by provider [email={}]", bookingId, securedUser.getUsername());
+        return apiResponse("Service provider has delivered the service");
     }
 
-    private void notifyCustomer(Booking booking) {
-        User user = booking.getUser();
-        String serviceProvider = booking.getListing().getServiceProvider().getUser().getFirstName();
-        String serviceName = booking.getListing().getServiceName();
-        AppNotification appNotification = AppNotification.builder()
-                .notificationTime(LocalDateTime.now())
-                .recipient(user)
-                .message(String.format("""
-                        Dear %s,
-                        %s has completed the %s service assigned to him.
-                        Inspect and revert.
-                        """, user.getFirstName(), serviceProvider, serviceName))
-                .build();
-        appNotificationService.saveNotifications(appNotification);
-        sendNotificationMailToCustomer(user, serviceProvider, serviceName);
-    }
-
-    private void sendNotificationMailToCustomer(User user, String serviceProvider, String serviceName) {
-        context.setVariables(Map.of(
-                "firstName", user.getFirstName(),
-                "serviceProviderName", serviceProvider,
-                "serviceName", serviceName
-        ));
-        String content = templateEngine.process("complete_task", context);
-        EmailRequest emailRequest = EmailRequest.builder()
-                .subject("Completion of " + serviceName + " service")
-                .to(Collections.singletonList(new MailInfo(user.getFirstName(), user.getEmailAddress())))
-                .htmlContent(content)
-                .build();
-        mailService.sendMail(emailRequest);
-    }
+    // ---------------------------------------------------------------------------
+    // Payment
+    // ---------------------------------------------------------------------------
 
     @Override
     public Response createPaymentIntentWithStripe(Long bookingId, User user) {
         Booking booking = getBookingById(bookingId);
-        if (booking.getBookingStage().equals(BookingStage.ACCEPTED)
-                && booking.getUser().equals(user)) {
-            Listing listing = booking.getListing();
-            PaymentIntentRequest intentRequest = PaymentIntentRequest.builder()
-                    .amount(booking.getTotalCost().longValue())
-                    .serviceName(listing.getServiceName())
-                    .productId(listing.getStripeId())
-                    .customerId(user.getStripeId())
-                    .productOwner(listing.getServiceProvider().getUser().getStripeId())
-                    .receiptEmail(user.getEmailAddress())
-                    .build();
-            return stripeService.createPaymentIntent(intentRequest);
+        if (!booking.getBookingStage().equals(BookingStage.ACCEPTED) || !booking.getUser().equals(user)) {
+            throw new ArtezanException("Unauthorized: booking not accepted or invalid user");
         }
-        throw new ArtezanException("Unauthorized: Booking not accepted or invalid user");
+        Listing listing = booking.getListing();
+
+        PaymentIntentRequest intentRequest = PaymentIntentRequest.builder()
+                .amount(booking.getTotalCost().longValue())
+                .bookingId(String.valueOf(bookingId))
+                .serviceName(listing.getServiceName())
+                .productId(listing.getStripeId())
+                .customerId(user.getStripeId())
+                .productOwner(listing.getServiceProvider().getUser().getStripeId())
+                .receiptEmail(user.getEmailAddress())
+                .build();
+        return stripeServiceImpl.createPaymentIntent(intentRequest);
+
+
     }
 
     @Override
     public ApiResponse authorizePaymentWithPaypal(Long bookingId, User user) {
         Booking booking = getBookingById(bookingId);
-        if (booking.getBookingStage().equals(BookingStage.ACCEPTED) && booking.getUser().equals(user)) {
-            OrderDetail orderDetail = new OrderDetail();
-            orderDetail.setEmail(user.getEmailAddress())
-                    .setServiceName(booking.getListing().getServiceName())
-                    .setFirstName(user.getFirstName())
-                    .setLastName(user.getLastName())
-                    .setTotal(booking.getTotalCost().doubleValue());
-            try {
-                String approvalUrl = paypalService.authorizePayment(orderDetail, cancelUrl, successUrl);
-                return apiResponse(approvalUrl, "Payment authorized successfully");
-            } catch (PayPalRESTException e) {
-                throw new ArtezanException(e.getMessage());
-            }
+        if (!booking.getBookingStage().equals(BookingStage.ACCEPTED) || !booking.getUser().equals(user)) {
+            throw new ArtezanException("Unauthorized: booking not accepted or invalid user");
         }
-        throw new ArtezanException("Unauthorized: Booking not accepted or invalid user");
+        OrderDetail orderDetail = new OrderDetail();
+        orderDetail.setEmail(user.getEmailAddress())
+                .setServiceName(booking.getListing().getServiceName())
+                .setFirstName(user.getFirstName())
+                .setLastName(user.getLastName())
+                .setTotal(booking.getTotalCost().doubleValue());
+        try {
+            String approvalUrl = paypalService.authorizePayment(orderDetail, cancelUrl, successUrl);
+            return apiResponse(approvalUrl, "Payment authorized successfully");
+        } catch (PayPalRESTException e) {
+            log.error("PayPal authorization failed for booking [id={}]: {}", bookingId, e.getMessage());
+            throw new ArtezanException("PayPal authorization failed: " + e.getMessage());
+        }
     }
 
     @Override
@@ -230,220 +229,325 @@ public class BookingServiceImpl implements BookingService {
         try {
             return paypalService.executePayment(paymentId, payerId);
         } catch (PayPalRESTException e) {
-            throw new ArtezanException(e.getMessage());
+            log.error("PayPal execution failed [paymentId={}]: {}", paymentId, e.getMessage());
+            throw new ArtezanException("PayPal payment execution failed: " + e.getMessage());
         }
+    }
+
+    @Override
+    @Transactional(propagation = REQUIRED)
+    public ApiResponse updateBookingAfterPayment(Long bookingId) {
+        Booking booking = getBookingById(bookingId);
+        if (!booking.getBookState().equals(OPEN) || !booking.getBookingStage().equals(BookingStage.ACCEPTED)) {
+            throw new ArtezanException("Booking is not open or the proposal has not been accepted");
+        }
+        booking.setBookingStage(PAID);
+        bookingRepository.save(booking);
+        log.info("Booking [id={}] marked as PAID", bookingId);
+        return apiResponse("Booking payment status updated");
     }
 
     @Override
     @Transactional(propagation = REQUIRED)
     public ApiResponse sendServiceProviderNotificationAfterPayment(Long bookingId) {
         Booking booking = getBookingById(bookingId);
-        AppNotification appNotification = AppNotification.builder()
+        if (!booking.getBookingStage().equals(PAID)) {
+            throw new ArtezanException("Cannot notify provider: booking has not been paid for");
+        }
+        AppNotification notification = AppNotification.builder()
                 .notificationTime(LocalDateTime.now())
                 .recipient(booking.getListing().getServiceProvider().getUser())
                 .message(String.format("A customer has paid for your service: %s", booking.getListing().getServiceName()))
                 .build();
+        appNotificationService.saveNotifications(notification);
         sendPaymentConfirmationToServiceProvider(booking);
-        appNotificationService.saveNotifications(appNotification);
         return apiResponse("Notification sent successfully");
     }
 
+    // ---------------------------------------------------------------------------
+    // Service agreement (customer accept / reject)
+    // ---------------------------------------------------------------------------
+
     @Override
     @Transactional(propagation = REQUIRED)
-    public ApiResponse customerAcceptService(Long bookingId) {
+    public ApiResponse customerAcceptService(Long bookingId, SecuredUser currentUser) {
         Booking booking = getBookingById(bookingId);
-        if (booking.getBookingAgreement() == null) {
-            BookingAgreement bookingAgreement = new BookingAgreement();
-            bookingAgreement.setAgreementStatus(AgreementStatus.ACCEPTED)
-                    .setMessage("Service is accepted")
-                    .setAgreementTime(LocalDateTime.now());
-            booking.setBookingAgreement(bookingAgreement);
-            booking.setBookState(COMPLETED);
-            bookingRepository.save(booking);
-            sendMailToServiceProvider(booking, "accept_service", " Service Accepted");
-            return apiResponse("Accept service successfully");
-        } else {
-            if (booking.getBookingAgreement().getAgreementStatus().equals(AgreementStatus.ACCEPTED))
-                throw new ArtezanException("Service already accepted and deal closed");
-            else {
-                booking.getBookingAgreement().setAgreementStatus(AgreementStatus.ACCEPTED)
-                        .setMessage("Service is accepted")
-                        .setAgreementTime(LocalDateTime.now());
-                booking.setBookState(COMPLETED);
-                bookingRepository.save(booking);
-                sendMailToServiceProvider(booking, "accept_service", " Service Accepted");
-                return apiResponse("Accept service successfully");
-            }
+
+        assertIsCustomerOfBooking(booking, currentUser.getUser(),
+                "Only the customer who placed this booking can accept the service");
+
+        if (booking.getBookingAgreement() != null
+                && booking.getBookingAgreement().getAgreementStatus().equals(AgreementStatus.ACCEPTED)) {
+            throw new ArtezanException("Service already accepted and deal closed");
         }
+
+        // Accept (or re-accept after a prior REJECTED agreement)
+        applyAgreement(booking, AgreementStatus.ACCEPTED, "Service is accepted");
+        booking.setBookState(COMPLETED);
+        bookingRepository.save(booking);
+        sendMailToServiceProvider(booking, "accept_service", " Service Accepted");
+        log.info("Booking [id={}] accepted by customer [email={}]", bookingId, currentUser.getUsername());
+        return apiResponse("Service accepted successfully");
     }
 
     @Override
     @Transactional(propagation = REQUIRED)
-    public ApiResponse customerRejectService(Long bookingId, String reason) {
-        Booking booking = getBookingById(bookingId);
-        if (booking.getBookingAgreement() == null) {
-            if (booking.getBookingStage().equals(PAID)) {
-                BookingAgreement bookingAgreement = new BookingAgreement();
-                bookingAgreement.setAgreementStatus(AgreementStatus.REJECTED)
-                        .setMessage(reason)
-                        .setAgreementTime(LocalDateTime.now());
-                booking.setBookingAgreement(bookingAgreement);
-                bookingRepository.save(booking);
-                sendMailToServiceProvider(booking, "reject_service", " Service Rejected");
-                return apiResponse("Reject service successfully");
+    public ApiResponse customerRejectService(RejectionRequest request, SecuredUser currentUser) {
+        Booking booking = getBookingById(request.bookingId());
+
+        assertIsCustomerOfBooking(
+                booking,
+                currentUser.getUser(),
+                "Only the customer who placed this booking can reject the service"
+        );
+
+        if (!booking.getBookingStage().equals(PAID)) {
+            throw new ArtezanException("Service has not been paid for yet");
+        }
+
+        BookingAgreement agreement = booking.getBookingAgreement();
+        if (agreement != null) {
+            if (agreement.getAgreementStatus().equals(AgreementStatus.REJECTED)) {
+                throw new ArtezanException("Service has already been rejected");
             }
-            throw new ArtezanException("Service not yet paid for");
-        } else {
-            if (booking.getBookingAgreement().getAgreementStatus().equals(AgreementStatus.REJECTED))
-                throw new ArtezanException("Service already rejected");
-            else if (booking.getBookingAgreement().getAgreementStatus().equals(AgreementStatus.ACCEPTED))
-                throw new ArtezanException("Service already accepted and deal closed");
-            else {
-                if (booking.getBookingStage().equals(PAID)) {
-                    booking.getBookingAgreement().setAgreementStatus(AgreementStatus.REJECTED)
-                            .setMessage(reason)
-                            .setAgreementTime(LocalDateTime.now());
-                    bookingRepository.save(booking);
-                    sendMailToServiceProvider(booking, "reject_service", " Service Rejected");
-                    return apiResponse("Reject service successfully");
-                }
-                throw new ArtezanException("Service not yet paid for");
+            if (agreement.getAgreementStatus().equals(AgreementStatus.ACCEPTED)) {
+                throw new ArtezanException("Service has already been accepted and the deal is closed");
             }
         }
+
+        applyAgreement(booking, AgreementStatus.REJECTED, request.rejectionReason());
+        bookingRepository.save(booking);
+        sendMailToServiceProvider(booking, "reject_service", " Service Rejected");
+        log.info("Booking [id={}] rejected by customer. Reason: {}", request.bookingId(), request.rejectionReason());
+        return apiResponse("Service rejected successfully");
     }
 
-    @Override
-    public ApiResponse updateBookingAfterPayment(Long bookingId) {
-        Booking booking = getBookingById(bookingId);
-        if (booking.getBookState().equals(OPEN) && booking.getBookingStage().equals(BookingStage.ACCEPTED)) {
-            booking.setBookingStage(PAID);
-            bookingRepository.save(booking);
-            return apiResponse("Booking payment status updated");
-        } else {
-            throw new ArtezanException("Booking not opened or booking proposal not accepted");
-        }
-    }
+    // ---------------------------------------------------------------------------
+    // Invoice
+    // ---------------------------------------------------------------------------
 
     @Override
     public ApiResponse generateInvoice(Long bookingId) {
-        Booking foundBooking = getBookingById(bookingId);
-        if (foundBooking.getBookingAgreement().getAgreementStatus().equals(AgreementStatus.ACCEPTED)
-                && foundBooking.getBookingStage().equals(PAID)) {
-            String customerName = foundBooking.getUser().getFirstName() + " " + foundBooking.getUser().getLastName();
-            int hours = calculateHoursWorked(foundBooking);
-            BigDecimal totalAmount = calculateTotalAmount(foundBooking);
-            User serviceProvider = foundBooking.getListing().getServiceProvider().getUser();
-            InvoiceResponse invoiceResponse = InvoiceResponse.builder()
-                    .serviceProvider(serviceProvider.getFirstName() + " " + serviceProvider.getLastName())
-                    .serviceName(foundBooking.getListing().getServiceName())
-                    .businessName(foundBooking.getListing().getBusinessName())
-                    .serviceCategory(foundBooking.getListing().getServiceCategory())
-                    .customerName(customerName)
-                    .numberOfDaysWorked(foundBooking.getBookDates().size())
-                    .numberOfHoursWorked(hours)
-                    .subTotal(foundBooking.getTotalCost())
-                    .total(totalAmount)
-                    .pricePerUnit(foundBooking.getListing().getPricing())
-                    .bookedAt(foundBooking.getBookedAt())
-                    .build();
-            return apiResponse(invoiceResponse, "Invoice generated successfully");
+        Booking booking = getBookingById(bookingId);
+
+        BookingAgreement agreement = booking.getBookingAgreement();
+        if (agreement == null || !agreement.getAgreementStatus().equals(AgreementStatus.ACCEPTED)) {
+            throw new ArtezanException("Error generating invoice: service has not been accepted by the customer");
         }
-        throw new ArtezanException("Error generating invoice: Service not accepted");
+        if (!booking.getBookingStage().equals(PAID)) {
+            throw new ArtezanException("Error generating invoice: booking has not been paid for");
+        }
+
+        User serviceProviderUser = booking.getListing().getServiceProvider().getUser();
+        String customerName = booking.getUser().getFirstName() + " " + booking.getUser().getLastName();
+        int hoursWorked = calculateHoursWorked(booking);
+        BigDecimal totalAmount = calculateTotalAfterCharges(booking);
+
+        InvoiceResponse invoiceResponse = InvoiceResponse.builder()
+                .serviceProvider(serviceProviderUser.getFirstName() + " " + serviceProviderUser.getLastName())
+                .serviceName(booking.getListing().getServiceName())
+                .businessName(booking.getListing().getBusinessName())
+                .serviceCategory(booking.getListing().getServiceCategory())
+                .customerName(customerName)
+                .numberOfDaysWorked(booking.getBookDates().size())
+                .numberOfHoursWorked(hoursWorked)
+                .subTotal(booking.getTotalCost())
+                .total(totalAmount)
+                .pricePerUnit(booking.getListing().getPricing())
+                .bookedAt(booking.getBookedAt())
+                .build();
+
+        return apiResponse(invoiceResponse, "Invoice generated successfully");
     }
 
-    private BigDecimal calculateTotalAmount(Booking foundBooking) {
-        return foundBooking.getTotalCost().subtract(
-                foundBooking.getTotalCost().multiply(
-                        BigDecimal.valueOf(charges)
-                )
-        );
-    }
+    // ---------------------------------------------------------------------------
+    // Private helpers — notifications & email
+    // ---------------------------------------------------------------------------
 
-    private int calculateHoursWorked(Booking foundBooking) {
-        return (int) Duration.between(foundBooking.getBookFrom(), foundBooking.getBookTo())
-                .toHours();
-    }
-
-    private void sendMailToServiceProvider(Booking booking, String fileName, String subject) {
+    private void notifyCustomerOfCompletion(Booking booking) {
+        User customer = booking.getUser();
+        String providerName = booking.getListing().getServiceProvider().getUser().getFirstName();
         String serviceName = booking.getListing().getServiceName();
-        String serviceProvider = booking.getListing().getServiceProvider().getUser().getFirstName();
-        String emailAddress = booking.getListing().getServiceProvider().getUser().getEmailAddress();
+
+        AppNotification notification = AppNotification.builder()
+                .notificationTime(LocalDateTime.now())
+                .recipient(customer)
+                .message(String.format(
+                        "Dear %s, %s has completed the %s service assigned to them. Please inspect and respond.",
+                        customer.getFirstName(), providerName, serviceName))
+                .build();
+        appNotificationService.saveNotifications(notification);
+
+        Context ctx = new Context();
+        ctx.setVariables(Map.of(
+                "firstName", customer.getFirstName(),
+                "serviceProviderName", providerName,
+                "serviceName", serviceName
+        ));
+        String content = templateEngine.process("complete_task", ctx);
+        EmailRequest emailRequest = EmailRequest.builder()
+                .subject("Completion of " + serviceName + " service")
+                .to(List.of(new MailInfo(customer.getFirstName(), customer.getEmailAddress())))
+                .htmlContent(content)
+                .build();
+        mailService.sendMail(emailRequest);
+    }
+
+    private void sendMailToServiceProvider(Booking booking, String templateName, String subjectSuffix) {
+        String serviceName = booking.getListing().getServiceName();
+        User providerUser = booking.getListing().getServiceProvider().getUser();
         String customer = booking.getUser().getFirstName();
-        context.setVariables(Map.of(
-                "firstName", serviceProvider,
+
+        Context ctx = new Context();
+        ctx.setVariables(Map.of(
+                "firstName", providerUser.getFirstName(),
                 "customerName", customer,
                 "serviceName", serviceName
         ));
-        String content = templateEngine.process(fileName, context);
+        String content = templateEngine.process(templateName, ctx);
         EmailRequest emailRequest = EmailRequest.builder()
-                .subject(serviceName + subject)
-                .to(Collections.singletonList(new MailInfo(serviceProvider, emailAddress)))
+                .subject(serviceName + subjectSuffix)
+                .to(List.of(new MailInfo(providerUser.getFirstName(), providerUser.getEmailAddress())))
                 .htmlContent(content)
                 .build();
         mailService.sendMail(emailRequest);
     }
 
     private void sendPaymentConfirmationToServiceProvider(Booking booking) {
-        if (booking.getBookingStage().equals(PAID)) {
-            User serviceproviderUser = booking.getListing().getServiceProvider().getUser();
-            String serviceProviderName = serviceproviderUser.getFirstName();
-            String customer = booking.getUser().getFirstName();
-            List<LocalDate> dates = booking.getBookDates().stream().toList();
-            context.setVariables(Map.of(
-                    "firstName", serviceProviderName,
-                    "customer", customer,
-                    "amount", booking.getTotalCost().toString(),
-                    "service", booking.getListing().getServiceName(),
-                    "date", dates.get(0).toString(),
-                    "time", booking.getBookFrom().toString()
-            ));
-            String content = templateEngine.process("payment_confirmation", context);
-            EmailRequest request = EmailRequest.builder()
-                    .subject("Payment Notification")
-                    .to(Collections.singletonList(new MailInfo(
-                            serviceProviderName,
-                            serviceproviderUser.getEmailAddress()
-                    )))
-                    .htmlContent(content)
-                    .build();
-            mailService.sendMail(request);
-        } else {
-            throw new ArtezanException("Unpaid Service");
-        }
+        User providerUser = booking.getListing().getServiceProvider().getUser();
+        String customer = booking.getUser().getFirstName();
+        // Use sorted order for deterministic date display — Set has no guaranteed iteration order
+        LocalDate firstDate = booking.getBookDates().stream().sorted().findFirst()
+                .orElseThrow(() -> new ArtezanException("Booking has no dates"));
+
+        Context ctx = new Context();
+        ctx.setVariables(Map.of(
+                "firstName", providerUser.getFirstName(),
+                "customer", customer,
+                "amount", booking.getTotalCost().toString(),
+                "serviceName", booking.getListing().getServiceName(),
+                "date", firstDate.toString(),
+                "time", booking.getBookFrom().toString()
+        ));
+        String content = templateEngine.process("payment_confirmation", ctx);
+        EmailRequest request = EmailRequest.builder()
+                .subject("Payment Notification")
+                .to(List.of(new MailInfo(providerUser.getFirstName(), providerUser.getEmailAddress())))
+                .htmlContent(content)
+                .build();
+        mailService.sendMail(request);
     }
 
-    private void createNotification(Booking booking, String message) {
-        User user = booking.getUser();
+    private void createUserNotification(Booking booking, String message) {
         AppNotification notification = AppNotification.builder()
                 .message(message)
-                .recipient(user)
+                .recipient(booking.getUser())
                 .notificationTime(LocalDateTime.now())
                 .build();
         appNotificationService.saveNotifications(notification);
     }
 
-    private BigDecimal getTotalCost(
-            Set<LocalDate> dates, LocalTime start, LocalTime end, Listing listing) {
-
-        BigDecimal numberOfDays = BigDecimal.valueOf(dates.size());
-        long numberOfHours = Duration.between(start, end).toHours();
-        BigDecimal numberOfHoursPerDay = BigDecimal.valueOf(numberOfHours);
-        return listing.getPricing().multiply(numberOfDays).multiply(numberOfHoursPerDay);
+    private static AppNotification buildNewBookingNotification(Listing listing) {
+        return AppNotification.builder()
+                .notificationTime(LocalDateTime.now())
+                .recipient(listing.getServiceProvider().getUser())
+                .message("You have a new " + listing.getServiceName() + " booking proposal")
+                .build();
     }
 
-    private Set<LocalDate> getDates(Set<LocalDate> bookingDates, Listing listing) {
-        List<String> days = new ArrayList<>();
-        for (AvailableDays day : listing.getAvailableDays()) {
-            days.add(day.name().toLowerCase());
+    // ---------------------------------------------------------------------------
+    // Private helpers — business logic
+    // ---------------------------------------------------------------------------
+
+    /**
+     * Applies or updates a {@link BookingAgreement} on the given booking.
+     * Creates a new agreement if one does not yet exist.
+     */
+    private void applyAgreement(Booking booking, AgreementStatus status, String message) {
+        BookingAgreement agreement = booking.getBookingAgreement();
+        if (agreement == null) {
+            agreement = new BookingAgreement();
+            booking.setBookingAgreement(agreement);
         }
-        Set<LocalDate> localDates = new HashSet<>();
-        for (LocalDate date : bookingDates) {
-            String dayOfTheWeek = date.getDayOfWeek().toString().toLowerCase();
-            if (!days.contains(dayOfTheWeek)) {
-                throw new ArtezanException("Service Provider is unavailable on " + dayOfTheWeek.toUpperCase() + "s");
+        agreement.setAgreementStatus(status)
+                .setMessage(message)
+                .setAgreementTime(LocalDateTime.now());
+    }
+
+    /**
+     * Validates that each requested booking date falls on a day the service provider is available,
+     * then returns the validated set.
+     */
+    private Set<LocalDate> validateAndExtractDates(Set<LocalDate> requestedDates, Listing listing) {
+        // Convert available days to a Set<String> of lowercase day names for O(1) lookup
+        Set<String> availableDayNames = listing.getAvailableDays().stream()
+                .map(day -> day.name().toLowerCase())
+                .collect(Collectors.toSet());
+
+        Set<LocalDate> validated = new HashSet<>();
+        for (LocalDate date : requestedDates) {
+            String dayOfWeek = date.getDayOfWeek().toString().toLowerCase();
+            if (!availableDayNames.contains(dayOfWeek)) {
+                throw new ArtezanException(
+                        "Service provider is unavailable on " + date.getDayOfWeek().toString() + "s");
             }
-            localDates.add(date);
+            validated.add(date);
         }
-        return localDates;
+        return validated;
+    }
+
+    /**
+     * Calculates the total cost: price × number of days × hours per day.
+     */
+    private BigDecimal calculateTotalCost(Set<LocalDate> dates, LocalTime start, LocalTime end, Listing listing) {
+        BigDecimal days = BigDecimal.valueOf(dates.size());
+        BigDecimal hours = BigDecimal.valueOf(Duration.between(start, end).toHours());
+        return listing.getPricing().multiply(days).multiply(hours);
+    }
+
+    /**
+     * Returns the service fee retained by Artezan, deducted from the total booking cost.
+     */
+    private BigDecimal calculateTotalAfterCharges(Booking booking) {
+        return booking.getTotalCost().subtract(
+                booking.getTotalCost().multiply(BigDecimal.valueOf(charges))
+        );
+    }
+
+    /**
+     * Returns the total hours worked on a booking (difference between bookFrom and bookTo).
+     */
+    private int calculateHoursWorked(Booking booking) {
+        return (int) Duration.between(booking.getBookFrom(), booking.getBookTo()).toHours();
+    }
+
+    /**
+     * Looks up a booking by ID or throws {@link ArtezanException} with a clear message.
+     */
+    private Booking getBookingById(Long bookingId) {
+        return bookingRepository.findById(bookingId)
+                .orElseThrow(() -> new ArtezanException("Booking could not be found"));
+    }
+
+    /**
+     * Asserts that the caller is the service provider who owns the listing linked to this booking.
+     * Throws {@link com.api.artezans.exceptions.UserNotAuthorizedException} if not.
+     */
+    private void assertIsServiceProviderOfBooking(Booking booking, SecuredUser securedUser, String message) {
+        if (!booking.getListing().getServiceProvider().getUser().equals(securedUser.getUser())) {
+            throw new UserNotAuthorizedException(message);
+        }
+    }
+
+    /**
+     * Asserts that the caller is the customer who placed this booking.
+     * Throws {@link com.api.artezans.exceptions.UserNotAuthorizedException} if not.
+     */
+    private void assertIsCustomerOfBooking(Booking booking, User user, String message) {
+        if (!booking.getUser().equals(user)) {
+            log.warn("Unauthorized booking action attempted by [email={}] on booking [id={}]",
+                    user.getEmailAddress(), booking.getId());
+            throw new UserNotAuthorizedException(message);
+        }
     }
 }

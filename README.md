@@ -26,15 +26,15 @@
 
 ## 1. Project Overview
 
-Artezans is a **RESTful service-marketplace backend** that connects customers who need work done with service providers who can perform that work. Think of it as a local-services platform (similar conceptually to Airtasker or TaskRabbit) tailored to the Australian market.
+Artezans is a **RESTful artezanService-marketplace backend** that connects customers who need work done with artezanService providers who can perform that work. Think of it as a local-artezanServices platform (similar conceptually to Airtasker or TaskRabbit) tailored to the Australian market.
 
 ### Core Value Proposition
 
 | Actor | Capability |
 |-------|-----------|
 | **Customer** | Register, browse listings, post tasks, book providers, pay securely |
-| **Service Provider** | Register, submit KYC identity, create service listings, accept/reject proposals, earn payments |
-| **Admin** | Manage categories/services, oversee listings and tasks, run scripts |
+| **Service Provider** | Register, submit KYC identity, create artezanService listings, accept/reject proposals, earn payments |
+| **Admin** | Manage categories/artezanServices, oversee listings and tasks, run scripts |
 
 ### Key Features
 
@@ -94,12 +94,12 @@ The codebase follows a **Gateway → Controller → Service → Repository** lay
                        │ delegates to
 ┌──────────────────────▼──────────────────────────────┐
 │  Controller Layer  (*.controller.*)                  │
-│  @Component  — orchestrates calls between services  │
+│  @Component  — orchestrates calls between artezanServices  │
 │  No HTTP knowledge; clean unit-testable             │
 └──────────────────────┬──────────────────────────────┘
                        │ calls
 ┌──────────────────────▼──────────────────────────────┐
-│  Service Layer  (*.service.* / *.services.*)         │
+│  Service Layer  (*.artezanService.* / *.artezanServices.*)         │
 │  @Service / @Profile-guarded impls                  │
 │  Business logic, transactions, validation           │
 └──────────────────────┬──────────────────────────────┘
@@ -241,7 +241,7 @@ com.api.artezans
  [Provider completes work]
        │
        ▼
-  ACCEPTED (customer accepts completed service)
+  ACCEPTED (customer accepts completed artezanService)
    OR
   customerRejectService() ─► REJECTED
 ```
@@ -287,12 +287,12 @@ The most complex module. Orchestrates the multi-step deal flow:
 
 ### 5.4 `listings` — Service Listings
 
-Providers create rich listings representing their offered services. Supports:
+Providers create rich listings representing their offered artezanServices. Supports:
 - CRUD with JSON Patch (RFC 6902) updates
 - Pagination
 - Soft delete (`deleted` flag)
 - Location-based filtering
-- Full-text search by service name
+- Full-text search by artezanService name
 - Multiple business photos (Cloudinary URLs stored as `@ElementCollection`)
 
 ### 5.5 `provider` — Service Provider
@@ -304,7 +304,7 @@ Two-step registration:
 After registration, providers can:
 - Upload profile picture (Cloudinary)
 - Update info via JSON Patch
-- View tasks that match their service skills (`serviceProviderViewPeculiarTasks`)
+- View tasks that match their artezanService skills (`serviceProviderViewPeculiarTasks`)
 - View app notifications
 
 ### 5.6 `customer` — Customer
@@ -325,7 +325,7 @@ Customers can post tasks describing work they need done. A task includes:
 - `taskImage` (Cloudinary URL)
 - `isActive` flag
 
-Service providers see "peculiar tasks" matched to their listed service categories.
+Service providers see "peculiar tasks" matched to their listed artezanService categories.
 
 ### 5.8 `category` — Service Taxonomy
 
@@ -333,7 +333,7 @@ Two-level taxonomy:
 - **Category Name** (e.g., "HOME SERVICES") — top-level bucket
 - **Category** → **Services** — `Category` contains many `Service` records (e.g., "Cleaning", "Plumbing")
 
-Admin-managed. 15 pre-seeded categories and 63 services (via `V1__db_setup.sql`).
+Admin-managed. 15 pre-seeded categories and 63 artezanServices (via `V1__db_setup.sql`).
 
 ### 5.9 `tokens` — Token Management
 
@@ -404,8 +404,8 @@ All routes are prefixed with the server context root. The base API version prefi
 | `GET` | `/api/v1/admin/admin-listing/{listingId}` | Auth | Find any listing by ID (admin view) |
 | `POST` | `/api/v1/admin/add-category-name` | `ADMIN` | Add new top-level category names |
 | `GET` | `/api/v1/admin/all-category-names` | Auth | List all category names |
-| `POST` | `/api/v1/admin/add-service-category` | `ADMIN` | Add a service to a category |
-| `GET` | `/api/v1/admin/get-service-name/{categoryName}` | Auth | List services under a category |
+| `POST` | `/api/v1/admin/add-artezanService-category` | `ADMIN` | Add a artezanService to a category |
+| `GET` | `/api/v1/admin/get-artezanService-name/{categoryName}` | Auth | List artezanServices under a category |
 | `DELETE` | `/api/v1/admin/delete` | `ADMIN` | Delete a category name |
 | `GET` | `/api/v1/admin/categories` | Auth | View all categories |
 | `GET` | `/api/v1/admin/admin-view-tasks` | Auth | View all posted tasks |
@@ -423,7 +423,7 @@ All routes are prefixed with the server context root. The base API version prefi
 
 | Method | Path | Auth | Description |
 |--------|------|------|-------------|
-| `POST` | `/api/v1/service_provider/sign-up` | Public | Register a new service provider |
+| `POST` | `/api/v1/service_provider/sign-up` | Public | Register a new artezanService provider |
 | `POST` | `/api/v1/service_provider/complete` | Public | Complete registration (multipart/form-data) |
 | `POST` | `/api/v1/service_provider/profile_picture` | `SERVICE_PROVIDER` | Upload profile picture |
 | `PATCH` | `/api/v1/service_provider/update` | `SERVICE_PROVIDER` | Update info via JSON Patch |
@@ -434,14 +434,14 @@ All routes are prefixed with the server context root. The base API version prefi
 
 | Method | Path | Auth | Description |
 |--------|------|------|-------------|
-| `POST` | `/api/v1/listing/create-listing` | Public* | Create a new service listing (multipart) |
+| `POST` | `/api/v1/listing/create-listing` | Public* | Create a new artezanService listing (multipart) |
 | `GET` | `/api/v1/listing/listing-images/{listingId}` | Auth | Get all business picture URLs |
 | `GET` | `/api/v1/listing/listings/{pageNumber}` | `SERVICE_PROVIDER` | Paginated listings for authenticated provider |
 | `GET` | `/api/v1/listing/undeleted/{pageNumber}` | Auth | Paginated non-deleted listings |
 | `PATCH` | `/api/v1/listing/update-listing/{listingId}` | `SERVICE_PROVIDER` | JSON Patch update |
 | `DELETE` | `/api/v1/listing/delete-listing/{listingId}` | `SERVICE_PROVIDER` | Soft delete listing |
 | `GET` | `/api/v1/listing/by-id/{listingId}` | Auth | Get listing by ID (user view) |
-| `GET` | `/api/v1/listing/by-service-name/{serviceName}` | Auth | Search listings by service name |
+| `GET` | `/api/v1/listing/by-artezanService-name/{serviceName}` | Auth | Search listings by artezanService name |
 | `GET` | `/api/v1/listing/by-location` | Auth | Filter listings by location (suburb/state/postcode) |
 
 > *`create-listing` has its `@PreAuthorize` commented out — currently open.
@@ -458,8 +458,8 @@ All routes are prefixed with the server context root. The base API version prefi
 | `POST` | `/api/v1/booking/authorize-paypal?bookingId=` | Auth | Initiate PayPal payment |
 | `POST` | `/api/v1/booking/execute-payment-paypal?paymentId=&payerId=` | Public | PayPal callback — complete payment |
 | `POST` | `/api/v1/booking/send-notification?bookingId=` | Auth | Notify provider after payment |
-| `POST` | `/api/v1/booking/accept-service?bookingId=` | Auth | Customer accepts completed service |
-| `POST` | `/api/v1/booking/reject-service` | Auth | Customer rejects service (with reason) |
+| `POST` | `/api/v1/booking/accept-artezanService?bookingId=` | Auth | Customer accepts completed artezanService |
+| `POST` | `/api/v1/booking/reject-artezanService` | Auth | Customer rejects artezanService (with reason) |
 | `POST` | `/api/v1/booking/update_payment?bookingId=` | Auth | Sync booking state after payment |
 | `POST` | `/api/v1/booking/generate-invoice?bookingId=` | Auth | Generate invoice |
 | `POST` | `/api/v1/booking/stripe-webhook` | Public | Stripe event webhook receiver |
@@ -639,7 +639,7 @@ Managed by **Flyway** — single migration script `V1__db_setup.sql`.
 | `task_task_dates` | Element collection for task dates |
 | `category_name` | Top-level category label |
 | `category` | Service category |
-| `services` | Individual service; FK to `category` |
+| `artezanServices` | Individual artezanService; FK to `category` |
 | `task_hub_token` | JWT access + refresh token pairs |
 | `task_hub_verification_token` | Email verification tokens |
 | `change_password_token` | Password reset tokens |
@@ -714,8 +714,8 @@ All config via `application.yml`. Values fall back to defaults when environment 
 | `paypal.mode` | `MODE` | `sandbox` |
 | `paypal.client.id` | `ID` | Sandbox client ID |
 | `paypal.client.secret` | `SECRET` | Sandbox secret |
-| `success.url` | `SUCCESS` | `https://service-rppp.onrender.com/api/v1/paypal/success` |
-| `cancel.url` | `CANCEL` | `https://service-rppp.onrender.com/api/v1/paypal/cancel` |
+| `success.url` | `SUCCESS` | `https://artezanService-rppp.onrender.com/api/v1/paypal/success` |
+| `cancel.url` | `CANCEL` | `https://artezanService-rppp.onrender.com/api/v1/paypal/cancel` |
 
 ### 11.7 Application
 
@@ -736,8 +736,8 @@ All config via `application.yml`. Values fall back to defaults when environment 
 On first run, the migration seeds:
 
 - **Admin user:** `info@taskhub.com` / password `12345` (role: `ADMIN`)
-- **15 service categories** (Home Services, Personal Services, Events & Entertainments, etc.)
-- **63 service listings** mapped to those categories
+- **15 artezanService categories** (Home Services, Personal Services, Events & Entertainments, etc.)
+- **63 artezanService listings** mapped to those categories
 
 ### 12.2 `InitActors.java` (`@PostConstruct` — runs every startup)
 

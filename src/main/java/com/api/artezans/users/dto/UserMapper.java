@@ -11,7 +11,7 @@ import org.mapstruct.IterableMapping;
 import java.util.List;
 
 
-@Mapper(componentModel = "spring", unmappedTargetPolicy = ReportingPolicy.IGNORE)// makes it a Spring bean
+@Mapper(componentModel = "spring", unmappedTargetPolicy = ReportingPolicy.IGNORE, uses = AddressDTO.class)// makes it a Spring bean
 public interface UserMapper {
 
     // Simple mapping — same field names map automatically

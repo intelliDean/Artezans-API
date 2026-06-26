@@ -1,6 +1,6 @@
 package com.api.artezans.notifications.mail;
 
-import com.api.artezans.notifications.mail.dto.EmailRequest;
+import com.api.artezans.notifications.dto.EmailRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;

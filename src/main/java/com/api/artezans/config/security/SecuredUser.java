@@ -19,17 +19,17 @@ public class SecuredUser implements UserDetails, OAuth2User {
 
     private final User user;
 
-    private final String firstName;
-
-    private final String lastName;
-
-    private final String emailAddress;
-
-    private final String password;
-
-    private final boolean isEnabled;
-
-    private final Set<Role> roles;
+//    private final String firstName;
+//
+//    private final String lastName;
+//
+//    private final String emailAddress;
+//
+//    private final String password;
+//
+//    private final boolean isEnabled;
+//
+//    private final Set<Role> roles;
 
     private Map<String, Object> attributes;
 
@@ -37,12 +37,12 @@ public class SecuredUser implements UserDetails, OAuth2User {
 
         this.user = user;
 
-        this.firstName = user.getFirstName();
-        this.lastName = user.getLastName();
-        this.emailAddress = user.getEmailAddress();
-        this.isEnabled = user.isEnabled();
-        this.password = user.getPassword();
-        this.roles = user.getRoles();
+//        this.firstName = user.getFirstName();
+//        this.lastName = user.getLastName();
+//        this.emailAddress = user.getEmailAddress();
+//        this.isEnabled = user.isEnabled();
+//        this.password = user.getPassword();
+//        this.roles = user.getRoles();
     }
 
     public SecuredUser(User user, Map<String, Object> attributes) {
@@ -52,29 +52,29 @@ public class SecuredUser implements UserDetails, OAuth2User {
 
     @Override
     public @NonNull Collection<? extends GrantedAuthority> getAuthorities() {
-        return roles.stream()
+        return user.getRoles().stream()
                 .map(role -> new SimpleGrantedAuthority(role.name()))
                 .collect(Collectors.toSet());
     }
 
     @Override
     public @NonNull String getUsername() {
-        return emailAddress;
+        return user.getEmailAddress();
     }
 
     @Override
     public String getPassword() {
-        return password;
+        return user.getPassword();
     }
 
     @Override
     public boolean isEnabled() {
-        return isEnabled;
+        return user.isEnabled();
     }
 
     @Override
     public @NonNull String getName() {
-        return "%s %s".formatted(firstName, lastName);
+        return "%s %s".formatted(user.getFirstName(), user.getLastName());
     }
 
     @Override

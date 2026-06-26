@@ -1,5 +1,6 @@
 package com.api.artezans.notifications.sms;
 
+import com.api.artezans.notifications.dto.SmsRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;

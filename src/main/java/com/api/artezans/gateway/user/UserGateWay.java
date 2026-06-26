@@ -1,8 +1,10 @@
 package com.api.artezans.gateway.user;
 
-import com.api.artezans.password.dtos.EmailParam;
-import com.api.artezans.password.dtos.ResetPasswordRequest;
-import com.api.artezans.users.controller.UserController;
+import com.api.artezans.config.annotation.CurrentUser;
+import com.api.artezans.config.security.SecuredUser;
+import com.api.artezans.password.change_password.dtos.EmailParam;
+import com.api.artezans.password.change_password.dtos.ResetPasswordRequest;
+import com.api.artezans.users.services.UserService;
 import com.api.artezans.utils.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -20,13 +22,13 @@ import static com.api.artezans.gateway.user.UserUtil.*;
 @RequestMapping("api/v1/user")
 public class UserGateWay {
 
-    private final UserController userController;
+    private final UserService userService;
 
     @PostMapping("/forgot-password")
     @Operation(summary = FORGET_PASSWORD_SUM, description = FORGET_PASSWORD_DESC, operationId = FORGET_PASSWORD_OP_ID)
     public ResponseEntity<ApiResponse> forgotPassword(@RequestBody EmailParam request) {
         return ResponseEntity.ok(
-                userController.createLinkForPasswordRequest(request)
+                userService.createLinkForPasswordRequest(request)
         );
     }
 
@@ -34,7 +36,7 @@ public class UserGateWay {
     @Operation(summary = RESET_PASSWORD_SUM, description = RESET_PASSWORD_DESC, operationId = RESET_PASSWORD_OP_ID)
     public ResponseEntity<ApiResponse> resetPassword(
             @RequestBody ResetPasswordRequest request, @RequestParam("t") String token) {
-        return ResponseEntity.ok(userController.resetPassword(request, token));
+        return ResponseEntity.ok(userService.resetPassword(request, token));
     }
 
     @PostMapping("verify")
@@ -42,15 +44,15 @@ public class UserGateWay {
     public ResponseEntity<ApiResponse> verifyEmailAddress(
             @RequestParam(name = "t") String token, @RequestParam(name = "e") String email) {
         return ResponseEntity.ok(
-                userController.verifyUserEmail(token, email)
+                userService.verifyUserEmail(token, email)
         );
     }
 
     @PostMapping("/deactivate")
     @Operation(summary = DEACTIVATE_SUM, description = DEACTIVATE_DESC, operationId = DEACTIVATE_OP_ID)
-    public ResponseEntity<ApiResponse> deactivateAccount() {
+    public ResponseEntity<ApiResponse> deactivateAccount(@CurrentUser SecuredUser currentUser) {
         return ResponseEntity.ok(
-                userController.deactivateAccount()
+                userService.deactivateAccount(currentUser.getUser())
         );
     }
 
@@ -59,7 +61,7 @@ public class UserGateWay {
     public ResponseEntity<ApiResponse> sendActivationMail(
             @RequestBody EmailParam emailParam, HttpServletRequest request) {
         return ResponseEntity.ok(
-                userController.sendActivationMail(emailParam.getEmail(), request)
+                userService.sendActivationMail(emailParam.email(), request)
         );
     }
 
@@ -68,7 +70,7 @@ public class UserGateWay {
     public ResponseEntity<ApiResponse> reactivateAccount(
             @RequestParam(name = "e") String email, @RequestParam(name = "t") String token) {
         return ResponseEntity.ok(
-                userController.reactivate(email, token)
+                userService.reactivate(email, token)
         );
     }
 }

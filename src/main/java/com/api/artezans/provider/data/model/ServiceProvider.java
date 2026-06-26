@@ -14,16 +14,18 @@ import static jakarta.persistence.GenerationType.IDENTITY;
 @Entity
 @NoArgsConstructor
 @AllArgsConstructor
+@Table(name = "service_providers")
 public class ServiceProvider {
+
     @Id
     @GeneratedValue(strategy = IDENTITY)
     private Long id;
 
-    @OneToOne(targetEntity = User.class, cascade = ALL)
-    @JoinColumn(name = "user_id")
+    @OneToOne(fetch = FetchType.LAZY, cascade = {CascadeType.PERSIST, CascadeType.MERGE})
+    @JoinColumn(name = "user_id", nullable = false, unique = true)
     private User user;
 
-    @OneToOne(targetEntity = UserIdentity.class, cascade = PERSIST)
-    @JoinColumn(name = "user_identity_id")
+    @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.PERSIST)
+    @JoinColumn(name = "user_identity_id")  // nullable — identity docs may come later
     private UserIdentity userIdentity;
 }

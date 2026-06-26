@@ -24,7 +24,7 @@ public class Address {
 
     private String unitNumber;
 
-    private String suburb;
+    private String city;
 
     private String state;
 
@@ -42,7 +42,7 @@ public class Address {
         }
         sb.append(streetNumber).append(" ");
         sb.append(streetName).append(", ");
-        sb.append(suburb).append(", ");
+        sb.append(city).append(", ");
         sb.append(state).append(", ");
         sb.append(postCode);
         return sb.toString();

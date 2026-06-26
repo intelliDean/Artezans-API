@@ -2,7 +2,7 @@ spring:
   main:
     web-application-type: servlet   # Explicit: prevents WebFlux co-existence warning
   datasource:
-    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:arte}
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:artezan}
     username: ${DB_USERNAME:postgres}
     password: ${DB_PASSWORD}
     driver-class-name: org.postgresql.Driver
@@ -35,8 +35,8 @@ spring:
               - email
               - profile
           github:
-            client-id: ${GITHUB_CLIENT_ID:Ov23liSjfHWumIc9UlD2}
-            client-secret: ${GITHUB_CLIENT_SECRET:5419f8402bf2da3d3b594768aaf1035060cde416}
+            client-id: ${GITHUB_CLIENT_ID}
+            client-secret: ${GITHUB_CLIENT_SECRET}
             redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
             scope:
               - read:user
@@ -53,13 +53,25 @@ artezan:
     email:
       salt: ${EMAIL_SECRET}
 
+  admin:
+    email: oneblockhq@gmail.com
+    password: ${ADMIN_PASSWORD}
+  customer:
+    email: glory@gmail.com
+    password: ${CUSTOMER_PASSWORD}
+  provider:
+    email: chiamaka@gmail.com
+    password: ${PROVIDER_PASSWORD}
+
+
+
 # ── Token expiry (hours) ──────────────────────────────────────────────────────
 access_expiration: ${ACCESS_EXPIRATION:3}
 refresh_expiration: ${REFRESH_EXPIRATION:168}
 
 # ── Application meta ──────────────────────────────────────────────────────────
 app:
-  name: ${APP_NAME:Artezans}
+  name: ${APP_NAME:Artezan}
   email: ${APP_EMAIL:info@artezans.com}
   oauth2:
     authorized-redirect-uris:
@@ -68,8 +80,11 @@ app:
       - ${OAUTH2_REDIRECT_URI_PROD}
 
 
-frontend_url: ${FRONTEND_URL:http://localhost:3000}
+
 charges: ${CHARGES:0.15}
+
+frontend:
+  url: ${FRONTEND_URL}
 
 # ── Brevo (email + SMS) ───────────────────────────────────────────────────────
 sendinblue:
@@ -101,9 +116,9 @@ paypal:
     secret: ${PAYPAL_CLIENT_SECRET}
 
 success:
-  url: ${PAYPAL_SUCCESS_URL:http://localhost:8080/api/v1/paypal/success}
+  url: ${PAYPAL_SUCCESS_URL:http://localhost:8080/api/v1/paypal/pay/success}
 cancel:
-  url: ${PAYPAL_CANCEL_URL:http://localhost:8080/api/v1/paypal/cancel}
+  url: ${PAYPAL_CANCEL_URL:http://localhost:8080/api/v1/paypal/pay/cancel}
 
 # ── OAuth2 ────────────────────────────────────────────────────────────────────
 oauth2:
@@ -129,3 +144,45 @@ springdoc:
     display-operation-id: false
     persist-authorization: true
     try-it-out-enabled: true
+
+
+
+#  Artezan Platform (Microservices)
+#  ↓
+#  ┌─────────────────────────────────────────────┐
+#  │                                             │
+#  │  artezan-core (Servlet)                     │
+#  │  - User management                          │
+#  │  - Bookings                                 │
+#  │  - Payments                                 │
+#  │  - Compliance/Audit                         │
+#  │  - Spring MVC + JPA                         │
+#  │                                             │
+#  ├─────────────────────────────────────────────┤
+#  │                                             │
+#  │  artezan-notifications (Reactive)           │
+#  │  - Real-time notifications                  │
+#  │  - WebSocket connections                    │
+#  │  - Server-Sent Events                       │
+#  │  - Spring WebFlux + Netty                   │
+#  │                                             │
+#  ├─────────────────────────────────────────────┤
+#  │                                             │
+#  │  artezan-search (Reactive)                  │
+#  │  - High-volume search queries               │
+#  │  - Real-time filtering                      │
+#  │  - Spring WebFlux                           │
+#  │                                             │
+#  └─────────────────────────────────────────────┘
+
+#  artezan-core (Servlet — current app)
+#- Customer/ServiceProvider management  ✅ Servlet
+#- Bookings and payments                ✅ Servlet
+#- Listings                             ✅ Servlet
+#- Admin operations                     ✅ Servlet
+#- Compliance and audit                 ✅ Servlet
+#
+#  artezan-realtime (Reactive — future service if needed)
+#- Real-time booking notifications      ✅ Reactive
+#- Live task updates                    ✅ Reactive
+#- Chat between customer/provider       ✅ Reactive

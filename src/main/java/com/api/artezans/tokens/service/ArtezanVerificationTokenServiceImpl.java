@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 @Slf4j
 @Service
@@ -18,12 +19,21 @@ import java.util.List;
 public class ArtezanVerificationTokenServiceImpl implements ArtezanVerificationTokenService {
     private final ArtezanVerificationTokenRepository artezanVerificationTokenRepository;
 
+
     @Override
     public void saveToken(ArtezanVerificationToken verificationToken) {
-        ArtezanVerificationToken token = artezanVerificationTokenRepository.saveAndFlush(verificationToken);
-        log.info("saved token: {}", token.getToken());
-        log.info("saved token email: {}", token.getEmailAddress());
+        ArtezanVerificationToken token = artezanVerificationTokenRepository
+                .saveAndFlush(verificationToken);
+        log.info("Verification token saved for email: {}", token.getEmailAddress());
     }
+
+    @Override
+    public ArtezanVerificationToken findByTokenAndEmail(String token, String email) {
+        return artezanVerificationTokenRepository
+                .findValidVerificationTokenByTokenAndEmail(token, email, LocalDateTime.now())
+                .orElseThrow(() -> new ArtezanException("Token does not exist"));
+    }
+
 
     @Override
     public void deleteToken(ArtezanVerificationToken verificationToken) {
@@ -32,41 +42,33 @@ public class ArtezanVerificationTokenServiceImpl implements ArtezanVerificationT
 
     @Override
     public boolean isValid(ArtezanVerificationToken verificationToken) {
-        return verificationToken != null && !verificationToken.isExpired();
+        return verificationToken != null
+                && !verificationToken.isExpired()
+                && !verificationToken.isRevoked();
     }
 
-    @Override
-    public ArtezanVerificationToken findByTokenAndEmail(String token, String email) {
-        return artezanVerificationTokenRepository.findValidVerificationTokenByTokenAndEmail(token, email)
-                .orElseThrow(() -> new ArtezanException("Token could not be found"));
-    }
 
     @Override
     public ArtezanVerificationToken findByToken(String token) {
-        return artezanVerificationTokenRepository.findValidVerificationTokenByToken(token)
+        return artezanVerificationTokenRepository
+                .findValidVerificationTokenByToken(token, LocalDateTime.now())
                 .orElseThrow(() -> new ArtezanException("Token could not be found"));
     }
 
     @Override
     public ArtezanVerificationToken findByEmail(String email) {
         return artezanVerificationTokenRepository.findByEmailAddress(email)
-                .orElse(null);
+                .orElseThrow(() -> new ArtezanException("Token not found"));
     }
 
-    @Scheduled(cron = "0 0 0 * * ?", zone = "Australia/Sydney") //scheduled to run every midnight
-    void deleteAllInvalidTokens() {
-        final List<ArtezanVerificationToken> allRevokedTokens =
-                artezanVerificationTokenRepository.findAllInvalidTokens();
-        if (!allRevokedTokens.isEmpty()) {
-            artezanVerificationTokenRepository.deleteAll(allRevokedTokens);
-        }
+    @Override
+    @Scheduled(cron = "0 0 0 * * ?", zone = "Australia/Sydney")
+    public void deleteAllInvalidTokens() {
+        artezanVerificationTokenRepository.deleteAllInvalidTokens(LocalDateTime.now());
     }
 
-    @Scheduled(cron = "0 0 * * * ?", zone = "Australia/Sydney")
-    void setExpiredToken() {
-        final List<ArtezanVerificationToken> tokens = artezanVerificationTokenRepository.findAllValidTokens();
-        tokens.stream().filter(token -> token.getExpireAt().isBefore(LocalDateTime.now())
-        ).forEach(init -> init.setExpired(true));
-        artezanVerificationTokenRepository.saveAll(tokens);
+    @Override
+    public boolean existsValidTokenGeneratedSince(String email, LocalDateTime now, LocalDateTime cooldownLimit) {
+        return artezanVerificationTokenRepository.existsValidTokenGeneratedSince(email, now, cooldownLimit);
     }
 }

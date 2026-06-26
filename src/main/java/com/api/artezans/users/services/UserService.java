@@ -1,41 +1,47 @@
 package com.api.artezans.users.services;
 
+import com.api.artezans.password.change_password.dtos.EmailParam;
+import com.api.artezans.password.change_password.dtos.ResetPasswordRequest;
+import com.api.artezans.users.dto.UserDTO;
+import com.api.artezans.users.dto.UserMailInfo;
 import com.api.artezans.users.models.User;
 import com.api.artezans.utils.ApiResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.util.Optional;
-
 public interface UserService {
 
     User findUserByEmail(String email);
 
-    void validateExistence(String email);
+    UserDTO findUserDTOByEmail(String emailAddress);
 
-    void sendVerificationMail(User user);
+    void validateUserExistenceByEmail(String email);
 
-    void sendMail(User user, String url);
+    void sendVerificationMail(UserMailInfo user);
 
-    ApiResponse verified(String token, String email);
+    void sendMail(UserMailInfo user, String url);
+
+    ApiResponse verifyUserEmail(String token, String email);
 
     void saveUser(User user);
 
-    User currentUser();
-
-    ApiResponse uploadProfilePicture(MultipartFile image);
+    ApiResponse uploadProfilePicture(MultipartFile image, User user);
 
     User getUserFromToken(String token);
 
-    void savePasswordResetToken(Optional<User> user, String passwordToken);
+    void savePasswordResetToken(User user, String passwordToken);
 
-    String verifyPasswordResetToken(String token);
+    void verifyPasswordResetToken(String token);
 
     User findUserByPasswordToken(String token);
 
-    void sendPasswordResetMail(User user, String url);
+    void sendPasswordResetMail(User user, String token);
 
-    ApiResponse deactivateAccount();
+    ApiResponse createLinkForPasswordRequest(EmailParam emailParam);
+
+    ApiResponse resetPassword(ResetPasswordRequest passwordResetRequest, String token);
+
+    ApiResponse deactivateAccount(User user);
 
     ApiResponse sendActivationMail(String emailAddress, HttpServletRequest request);
 

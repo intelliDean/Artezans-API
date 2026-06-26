@@ -6,13 +6,10 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+
 @Repository
 public interface TaskRepository extends JpaRepository<Task, Long> {
 
-//    @Query(value = """
-//            select task from Task task
-//            where lower(task.taskServiceName) =
-//            """)
     List<Task> findAllByTaskServiceNameIgnoreCase(String serviceName);
 
     @Query(value = """
@@ -20,4 +17,6 @@ public interface TaskRepository extends JpaRepository<Task, Long> {
             where task.isActive = true
             """)
     List<Task> findAllUndeletedLists();
+
+    List<Task> findAllByIsActiveTrue(); // replaces findAllUndeletedLists
 }

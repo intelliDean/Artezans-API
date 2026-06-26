@@ -76,7 +76,7 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
         JwtService.Tokens token = jwtService.generateToken(authentication);
         assert securedUser != null;
         User foundUser = userService.findUserByEmail(securedUser.getUsername());
-        artezanTokenService.revokeToken(foundUser.getId());
+        artezanTokenService.revokeAllUserTokens(foundUser.getId());
         saveToken(token, securedUser.getUser());
         return UriComponentsBuilder.fromUriString(targetUrl)
                 .queryParam("token", token.accessToken())

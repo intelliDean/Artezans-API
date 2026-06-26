@@ -5,17 +5,19 @@ import jakarta.persistence.*;
 import lombok.*;
 
 @Entity
-@Setter
 @Getter
+@Setter
 @Builder
+@NoArgsConstructor
 @AllArgsConstructor
-@RequiredArgsConstructor
+@Table(name = "customers")
 public class Customer {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @OneToOne(targetEntity = User.class, cascade = CascadeType.ALL)
-    @JoinColumn(name = "user_id")
+    @OneToOne(fetch = FetchType.LAZY, cascade = {CascadeType.PERSIST, CascadeType.MERGE})
+    @JoinColumn(name = "user_id", nullable = false)
     private User user;
 }

@@ -1,7 +1,5 @@
 package com.api.artezans.users.dto;
 
-import com.api.artezans.users.models.Address;
-import com.api.artezans.users.models.User;
 import com.api.artezans.users.models.enums.AccountState;
 import com.api.artezans.users.models.enums.Role;
 import com.fasterxml.jackson.annotation.JsonFormat;
@@ -40,41 +38,4 @@ public record UserDTO(
         LocalDateTime registeredAt,
 
         Set<Role> roles
-) {
-//    public UserDTO(User user) {
-//        this(
-//                user.getStripeId(),
-//                user.getFirstName(),
-//                user.getLastName(),
-//                user.getEmailAddress(),
-//                user.getPhoneNumber(),
-//                user.getAddress() == null ? null : new AddressDTO(user.getAddress()),
-//                user.getProfileImage(),
-//                user.isEnabled(),
-//                user.getAccountState(),
-//                user.getDeactivatedAt(),
-//                user.getRegisteredAt(),
-//                user.getRoles()
-//        );
-//    }
-
-    public record AddressDTO(
-            String streetNumber,
-            String streetName,
-            String unitNumber,
-            String suburb,
-            String state,
-            String postCode
-    ) {
-//        public AddressDTO(Address address) {
-//            this(
-//                    address.getStreetNumber(),
-//                    address.getStreetName(),
-//                    address.getUnitNumber(),
-//                    address.getSuburb(),
-//                    address.getState(),
-//                    address.getPostCode()
-//            );
-//        }
-    }
-}
+) {}

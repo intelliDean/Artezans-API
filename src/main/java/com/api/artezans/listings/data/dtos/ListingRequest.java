@@ -57,7 +57,7 @@ public class ListingRequest {
 
         @NotNull(message = "Suburb" + NOT_NULL)
         @NotBlank(message = "Suburb" + NOT_BLANK)
-        private String suburb;
+        private String city;
 
         @NotNull(message = "State" + NOT_NULL)
         @NotBlank(message = "State" + NOT_BLANK)
@@ -69,9 +69,11 @@ public class ListingRequest {
 
         private String unitNumber;
 
-        private MultipartFile image1;
+        Set<MultipartFile> images;
 
-        private MultipartFile image2;
-
-        private MultipartFile image3;
+//        private MultipartFile image1;
+//
+//        private MultipartFile image2;
+//
+//        private MultipartFile image3;
 }

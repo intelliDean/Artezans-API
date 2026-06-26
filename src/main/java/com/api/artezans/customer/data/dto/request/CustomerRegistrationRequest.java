@@ -1,9 +1,6 @@
 package com.api.artezans.customer.data.dto.request;
 
-import jakarta.validation.constraints.Email;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.*;
 import lombok.*;
 
 import static com.api.artezans.utils.ArtezanUtils.*;
@@ -17,10 +14,12 @@ public class CustomerRegistrationRequest {
 
     @NotNull(message = "First name" + NOT_NULL)
     @NotBlank(message = "First name" + NOT_BLANK)
+    @Size(min = 3, message = "First name" + SIZE)
     private String firstName;
 
     @NotNull(message = "Last name" + NOT_NULL)
     @NotBlank(message = "Last name" + NOT_BLANK)
+    @Size(min = 3, message = "Last name" + SIZE)
     private String lastName;
 
     @NotNull(message = "Phone number" + NOT_NULL)
@@ -37,6 +36,7 @@ public class CustomerRegistrationRequest {
     @NotBlank(message = "Password" + NOT_BLANK)
     @Pattern(regexp = VALID_PASSWORD, message = PASSWORD_MESSAGE)
     private String password;
+
 }
 
 

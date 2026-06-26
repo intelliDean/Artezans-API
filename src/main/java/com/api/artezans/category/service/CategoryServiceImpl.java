@@ -1,102 +1,121 @@
 package com.api.artezans.category.service;
 
+import com.api.artezans.category.data.dtos.CategoryDTO;
+import com.api.artezans.category.data.dtos.CategoryMapper;
 import com.api.artezans.category.data.dtos.CategoryRequest;
 import com.api.artezans.category.data.dtos.ServicesDto;
+import com.api.artezans.category.data.model.ArtezanService;
 import com.api.artezans.category.data.model.Category;
 
+import com.api.artezans.category.data.model.CategoryName;
 import com.api.artezans.category.repository.CategoryRepository;
+import com.api.artezans.category.repository.CategoryNameRepository;
 import com.api.artezans.category.service.interfaces.CategoryService;
 import com.api.artezans.exceptions.ArtezanException;
-import com.api.artezans.users.services.UserService;
 import com.api.artezans.utils.ApiResponse;
-import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.stream.Collectors;
+import java.util.Optional;
 
 import static com.api.artezans.utils.ApiResponse.apiResponse;
 import static com.api.artezans.utils.ArtezanUtils.capitalized;
 
-
 @Slf4j
 @Service
-@AllArgsConstructor
+@Transactional
+@RequiredArgsConstructor
 public class CategoryServiceImpl implements CategoryService {
 
     private final CategoryRepository categoryRepository;
-    private final UserService userService;
-    //private final EntityManager entityManager;
+    private final CategoryNameRepository categoryNameRepository;
+    private final CategoryMapper categoryMapper;
+
 
     @Override
-    @Transactional(propagation = Propagation.REQUIRED)
-    public ApiResponse addServiceCategory(CategoryRequest request)  {
+    public ApiResponse addServiceCategory(CategoryRequest request) {
+        findByCategoryName(request.categoryName())
+                .ifPresentOrElse(
+                        category -> updateExistingCategory(category, request),
+                        () -> createNewCategory(request)
+                );
+        return apiResponse("Service category added successfully");
+    }
 
-        Category category = findByCategoryName(request.categoryName());
-      //  User user = userService.currentUser();
-        log.info("CATEGORY: {}", category);
+    private void updateExistingCategory(Category category, CategoryRequest request) {
+        List<ServicesDto> newServiceDtos = request.servicesDtos().stream()
+                .filter(dto -> notContained(dto, category))
+                .toList();
 
-        if (category != null) {
-            // Existing category, update services if needed
-            List<com.api.artezans.category.data.model.Service> services = request.servicesDtos().stream()
-                    .filter(servicesDto -> notContained(servicesDto, category))
-                    .map(servicesDto -> com.api.artezans.category.data.model.Service.builder()
-                            .serviceName(servicesDto.serviceName())
-                            .build())
-                    .toList();
-            category.setServices(services);
-            categoryRepository.save(category);
-        } else {
-
-            // New category
-            Category newCategory = new Category();
-            newCategory.setCategoryName(request.categoryName().toUpperCase());
-            newCategory.setServices(request.servicesDtos().stream()
-                    .map(servicesDto -> com.api.artezans.category.data.model.Service.builder()
-                            .serviceName(capitalized(servicesDto.serviceName()))
-                            .category(newCategory)
-                            .build())
-                    .toList()
-            );
-
-            // Associate the user with the new category
-//            User attachedUser = entityManager.merge(user);
-//            newCategory.setUser(attachedUser);
-
-            categoryRepository.save(newCategory);
+        if (newServiceDtos.isEmpty()) {
+            log.info("No new services to add to category: {}", category.getCategoryName());
+            return;
         }
-        return apiResponse("Service Category Added successfully");
+
+        for (ServicesDto dto : newServiceDtos) {
+            category.addArtezanService(
+                    ArtezanService.builder()
+                            .serviceName(capitalized(dto.serviceName()))
+                            .build()
+            );
+        }
+        categoryRepository.save(category);
+        log.info("Updated category: {} with {} new services",
+                category.getCategoryName(), newServiceDtos.size());
     }
 
+    private void createNewCategory(CategoryRequest request) {
+        String categoryNameUpper = request.categoryName().toUpperCase();
+        Category newCategory = Category.builder()
+                .categoryName(categoryNameUpper)
+                .build();
 
-    private boolean notContained(ServicesDto servicesDto, Category category) {
-        return category.getServices().stream()
-                .noneMatch(service ->
-                        service.getServiceName().equals(servicesDto.serviceName()));
+        for (ServicesDto dto : request.servicesDtos()) {
+            newCategory.addArtezanService(
+                    ArtezanService.builder()
+                            .serviceName(capitalized(dto.serviceName()))
+                            .build()
+            );
+        }
+        categoryRepository.save(newCategory);
+        log.info("Created new category: {}", newCategory.getCategoryName());
+
+        // Synchronize with category_names table
+        if (!categoryNameRepository.existsByNameIgnoreCase(categoryNameUpper)) {
+            categoryNameRepository.save(
+                    CategoryName.builder()
+                            .name(categoryNameUpper)
+                            .build()
+            );
+            log.info("Synchronized category name '{}' to category_names table", categoryNameUpper);
+        }
+    }
+
+    private boolean notContained(ServicesDto dto, Category category) {
+        return category.getArtezanServices().stream()
+                .noneMatch(artezanService -> artezanService.getServiceName()
+                        .equalsIgnoreCase(dto.serviceName()));
     }
 
     @Override
-    public Category findByCategoryName(String categoryName) {
-        return categoryRepository.findCategoryByCategoryNameIgnoreCase(categoryName)
-                .orElse(null);
+    public Optional<Category> findByCategoryName(String categoryName) {
+        return categoryRepository.findCategoryByCategoryNameIgnoreCase(categoryName);
     }
 
     @Override
     public List<String> viewServicesByCategoryName(String categoryName) {
-        Category category = findByCategoryName(categoryName);
-        if (category != null) {
-            return category.getServices().stream()
-                    .map(com.api.artezans.category.data.model.Service::getServiceName)
-                    .collect(Collectors.toList());
-        }
-        throw new ArtezanException("Category does not exist");
+        return findByCategoryName(categoryName)
+                .map(category -> category.getArtezanServices().stream()
+                        .map(ArtezanService::getServiceName)
+                        .toList())
+                .orElseThrow(() -> new ArtezanException("Category does not exist"));
     }
 
     @Override
-    public List<Category> viewAllCategories() {
-        return categoryRepository.findAll();
+    public List<CategoryDTO> viewAllCategories() {
+        return categoryMapper.toDTOList(categoryRepository.findAll());
     }
 }

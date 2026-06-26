@@ -1,13 +1,5 @@
 package com.api.artezans.config;
 
-import com.api.artezans.config.Oauth2.HttpCookieOAuth2AuthorizationRequestRepository;
-import com.api.artezans.config.Oauth2.OAuth2AuthenticationFailureHandler;
-import com.api.artezans.config.Oauth2.OAuth2AuthenticationSuccessHandler;
-import com.api.artezans.config.Oauth2.userDetail.Oauth2CustomUserService;
-import com.api.artezans.config.utils.ArtezanAccessDeniedHandler;
-import com.api.artezans.config.utils.NoAuth;
-import com.api.artezans.users.models.enums.Role;
-import lombok.AllArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -22,18 +14,25 @@ import org.springframework.security.config.annotation.web.configurers.AbstractHt
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.argon2.Argon2PasswordEncoder;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+
+import com.api.artezans.config.Oauth2.HttpCookieOAuth2AuthorizationRequestRepository;
+import com.api.artezans.config.Oauth2.OAuth2AuthenticationFailureHandler;
+import com.api.artezans.config.Oauth2.OAuth2AuthenticationSuccessHandler;
+import com.api.artezans.config.Oauth2.userDetail.Oauth2CustomUserService;
+import com.api.artezans.config.utils.ArtezanAccessDeniedHandler;
+import com.api.artezans.config.utils.NoAuth;
+
+import lombok.AllArgsConstructor;
 
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
 @AllArgsConstructor
-public class SecurityConfig implements WebMvcConfigurer {
+public class SecurityConfig {
     private final AuthenticationEntryPoint authenticationEntryPoint;
     private final UserDetailsService userDetailsService;
     private final JwtAuthFilter jwtAuthFilter;
@@ -51,7 +50,7 @@ public class SecurityConfig implements WebMvcConfigurer {
                         httpRequest -> httpRequest.requestMatchers(NoAuth.whiteList()).permitAll()
                                 .requestMatchers(NoAuth.swagger()).permitAll()
                                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                                .requestMatchers("/api/v1/user/deactivate").authenticated() //open for all '/api/v1/user' except this
+                                .requestMatchers("/api/v1/user/deactivate").authenticated()
                                 .anyRequest().authenticated()) //anything path aside from the above, make sure it is authenticated
                 .sessionManagement(sessionMgt -> sessionMgt.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .oauth2Login(oauth2 -> oauth2.authorizationEndpoint(authorization -> authorization.authorizationRequestRepository(httpCookieOAuth2AuthorizationRequestRepository))
@@ -80,11 +79,6 @@ public class SecurityConfig implements WebMvcConfigurer {
     }
 
     @Bean
-    public static PasswordEncoder bCryptPasswordEncoder() {
-        return new BCryptPasswordEncoder();
-    }
-
-    @Bean
     public static PasswordEncoder passwordEncoder() {
         // return Argon2PasswordEncoder.defaultsForSpringSecurity_v5_8();
         return new Argon2PasswordEncoder(
@@ -96,8 +90,7 @@ public class SecurityConfig implements WebMvcConfigurer {
     }
 
     @Bean
-    public AuthenticationManager authenticationManager(
-            AuthenticationConfiguration configuration) throws Exception {
+    public AuthenticationManager authenticationManager(AuthenticationConfiguration configuration) {
         return configuration.getAuthenticationManager();
     }
 }

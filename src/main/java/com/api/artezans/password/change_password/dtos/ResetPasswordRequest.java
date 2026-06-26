@@ -1,0 +1,4 @@
+package com.api.artezans.password.change_password.dtos;
+
+public record ResetPasswordRequest(String password) {
+}

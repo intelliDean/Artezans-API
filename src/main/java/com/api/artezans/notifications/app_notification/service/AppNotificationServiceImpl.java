@@ -14,8 +14,8 @@ public class AppNotificationServiceImpl implements AppNotificationService{
     private final AppNotificationRepository appNotificationRepository;
 
     @Override
-    public List<AppNotification> saveNotifications(List<AppNotification> notifications) {
-        return appNotificationRepository.saveAll(notifications);
+    public void saveNotifications(List<AppNotification> notifications) {
+        appNotificationRepository.saveAll(notifications);
     }
 
     @Override

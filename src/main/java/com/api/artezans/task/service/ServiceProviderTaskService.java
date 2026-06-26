@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @AllArgsConstructor
@@ -19,12 +20,10 @@ public class ServiceProviderTaskService {
         return taskRepository.findAllByTaskServiceNameIgnoreCase(serviceName);
     }
 
-
     public List<Task> serviceProviderViewPeculiarTasks(List<String> serviceNames) {
-        List<Task> tasksToDisplay = new ArrayList<>();
-        serviceNames.parallelStream()
+        return serviceNames.parallelStream()
                 .map(this::findTaskByServiceName)
-                .forEach(tasksToDisplay::addAll);
-        return tasksToDisplay;
+                .flatMap(List::stream)
+                .collect(Collectors.toList());
     }
 }

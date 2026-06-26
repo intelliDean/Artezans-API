@@ -40,8 +40,6 @@ public class JwtAuthFilter extends OncePerRequestFilter {
     private final ObjectMapper objectMapper;
 
 
-
-
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
         String path = request.getServletPath();
@@ -70,7 +68,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                 return;
             }
 
-            String username = jwtService.extractUsername(token);
+            String username = jwtService.extractUsernameFromToken(token);
 
             if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
                 UserDetails userDetails = userDetailsService.loadUserByUsername(username);

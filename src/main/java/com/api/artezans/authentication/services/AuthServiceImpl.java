@@ -1,17 +1,18 @@
 package com.api.artezans.authentication.services;
 
+import com.api.artezans.users.dto.UserMailInfo;
 import com.api.artezans.users.dto.UserMapper;
 import com.api.artezans.authentication.dtos.AuthRequest;
 import com.api.artezans.authentication.dtos.AuthResponse;
 import com.api.artezans.config.security.JwtService;
-import com.api.artezans.config.utils.SoftHasher;
+import com.api.artezans.config.utils.SecurityUtils;
 import com.api.artezans.exceptions.ArtezanException;
+import com.api.artezans.exceptions.UserNotFoundException;
 import com.api.artezans.tokens.model.ArtezanToken;
 import com.api.artezans.tokens.model.ArtezanVerificationToken;
 import com.api.artezans.tokens.service.interfaces.ArtezanTokenService;
 import com.api.artezans.tokens.service.interfaces.ArtezanVerificationTokenService;
 import com.api.artezans.users.models.User;
-import com.api.artezans.users.models.enums.AccountState;
 import com.api.artezans.users.services.UserService;
 import com.api.artezans.utils.ApiResponse;
 import com.api.artezans.utils.ArtezanUtils;
@@ -20,8 +21,10 @@ import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -30,8 +33,7 @@ import org.springframework.util.StringUtils;
 import java.time.Duration;
 import java.time.LocalDateTime;
 
-import static com.api.artezans.utils.ArtezanUtils.BEARER;
-import static com.api.artezans.utils.ArtezanUtils.DEACTIVATED;
+import static com.api.artezans.utils.ArtezanUtils.*;
 import static org.springframework.http.HttpHeaders.AUTHORIZATION;
 import static org.springframework.transaction.annotation.Propagation.REQUIRED;
 
@@ -39,7 +41,7 @@ import static org.springframework.transaction.annotation.Propagation.REQUIRED;
 @RequiredArgsConstructor
 public class AuthServiceImpl implements AuthService {
 
-    @Value("${frontend_url}")
+    @Value("${frontend.url}")
     private String frontendUrl;
 
     private final AuthenticationManager authenticationManager;
@@ -47,7 +49,7 @@ public class AuthServiceImpl implements AuthService {
     private final ArtezanVerificationTokenService artezanVerificationTokenService;
     private final LogoutService logoutService;
     private final ObjectMapper objectMapper;
-    private final SoftHasher softHash;
+    private final SecurityUtils securityUtils;
     private final PasswordEncoder passwordEncoder;
 
     private final UserService userService;
@@ -57,41 +59,33 @@ public class AuthServiceImpl implements AuthService {
     @Override
     @Transactional(propagation = REQUIRED)
     public AuthResponse authenticateAndGetToken(AuthRequest authRequest) {
-        final User user = userService.findUserByEmail(authRequest.emailAddress());
-
-        if (user.getAccountState().equals(AccountState.NOT_VERIFIED)) {
-            unverifiedUserEmailAddress(user);
-        } else if (user.getAccountState().equals(AccountState.DEACTIVATED)) {
-            return AuthResponse.builder()
-                    .message(DEACTIVATED)
-                    .build();
-        } else if (user.getAccountState().equals(AccountState.VERIFIED)) {
-            return login(authRequest, user);
-        }
-        throw new ArtezanException("Unusual error logging in");
-    }
-
-    private AuthResponse login(AuthRequest authRequest, User user) {
-        JwtService.Tokens tokens;
         try {
             Authentication authentication = authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(
                             authRequest.emailAddress(),
-                            authRequest.password()));
-            if (authentication.isAuthenticated()) {
-                tokens = jwtService.generateToken(authentication);
-                saveTokenToDatabase(user, tokens);
-            } else
-                throw new ArtezanException("Authentication failed");
-            return AuthResponse.builder()
-//                    .user(new UserDTO(user))
-                    .user(userMapper.toDTO(user))
-                    .message("Authentication successful")
-                    .accessToken(tokens.accessToken())
-                    .refreshToken(tokens.refreshToken())
-                    .build();
-        } catch (Exception ex) {
-            throw new ArtezanException(ex.getMessage());
+                            authRequest.password()
+                    )
+            );
+
+            final User user = userService.findUserByEmail(authRequest.emailAddress());
+
+            return switch (user.getAccountState()) {
+               case NOT_VERIFIED -> unverifiedUserEmailAddress(user);
+               case DEACTIVATED -> AuthResponse.builder().message(DEACTIVATED).build();
+               case VERIFIED -> {
+                   JwtService.Tokens tokens = jwtService.generateToken(authentication);
+                   saveTokenToDatabase(user, tokens);
+                   yield AuthResponse.builder()
+                           .user(userMapper.toDTO(user))
+                           .message("Authentication successful")
+                           .accessToken(tokens.accessToken())
+                           .refreshToken(tokens.refreshToken())
+                           .build();
+               }
+               default -> AuthResponse.builder().message("Unusual error logging in").build();
+           };
+        } catch (AuthenticationException | UserNotFoundException e) {
+            throw new BadCredentialsException("Invalid email or password");
         }
     }
 
@@ -100,21 +94,29 @@ public class AuthServiceImpl implements AuthService {
                 .accessToken(tokens.accessToken())
                 .refreshToken(tokens.refreshToken())
                 .revoked(false)
+//                .expiresAt()
                 .user(user)
                 .build();
         artezanTokenService.saveToken(token);
     }
 
-    private void unverifiedUserEmailAddress(User user) {
+    private AuthResponse unverifiedUserEmailAddress(User user) {
         ArtezanVerificationToken verificationToken = artezanVerificationTokenService
                 .findByEmail(user.getEmailAddress());
         if (verificationToken.isExpired()) {
             updateTokenAndResendVerificationMail(user);
-            throw new ArtezanException("New verification email has been sent to your email address");
+            return AuthResponse.builder()
+                    .message(TOKEN_EXPIRED)
+                    .build();
         } else {
-            Duration duration = Duration.between(LocalDateTime.now(), verificationToken.getExpireAt());
-            throw new ArtezanException("Your verification token is still valid for the next " +
-                    duration.toMinutes() + " minute(s). Check your registered email to get your email verified");
+            return AuthResponse.builder()
+                    .message(tokenStillValidMessage(
+                            Duration.between(
+                                    LocalDateTime.now(),
+                                    verificationToken.getExpireAt()
+                            ).toMinutes()
+                    )).build();
+
         }
     }
 
@@ -134,12 +136,12 @@ public class AuthServiceImpl implements AuthService {
         String preUrl = "%s/auth/activating".formatted(frontendUrl);
 
         // this is just to hash the email address, not the password
-        String url = ArtezanUtils.getUrl(
-                softHash.encode(emailAddress), // new BCryptPasswordEncoder().encode(emailAddress);
+        String url = ArtezanUtils.buildActionUrl(
+                preUrl,
                 generatedToken,
-                preUrl);
+                securityUtils.hash(emailAddress));
 
-        userService.sendMail(user, url);
+        userService.sendMail(new UserMailInfo(user), url);
     }
 
     @Override
@@ -160,7 +162,7 @@ public class AuthServiceImpl implements AuthService {
             throw new ArtezanException("Refresh token is invalid or expired");
         }
 
-        final String email = jwtService.extractUsername(refreshToken);
+        final String email = jwtService.extractUsernameFromToken(refreshToken);
         if (!StringUtils.hasText(email)) {
             throw new ArtezanException("Could not extract email from token");
         }
@@ -173,39 +175,6 @@ public class AuthServiceImpl implements AuthService {
         artezanTokenService.saveToken(token);
         return new JwtService.Tokens(accessToken, refreshToken);
     }
-
-
-
-
-
-//    @Override
-//    public void logout(HttpServletRequest request, HttpServletResponse response) throws IOException {
-//        logoutService.logout(request, response);
-//    }
-//
-//    @Override
-//    public void refreshToken(HttpServletRequest request, HttpServletResponse response) throws IOException {
-//        final String authHeader = request.getHeader(AUTHORIZATION);
-//        if (!StringUtils.hasText(authHeader) ||
-//                !StringUtils.startsWithIgnoreCase(authHeader, BEARER))
-//            return;
-//        final String refreshToken = authHeader.substring(7);
-//        if (jwtService.validateToken(refreshToken)) {
-//            final String email = jwtService.extractUsername(refreshToken);
-//            if (StringUtils.hasText(email)) {
-//                final User user = userService.findUserByEmail(email);
-//                final String accessToken = jwtService.accessToken(user);
-//                final ArtezanToken token = artezanTokenService.getValidTokenByAnyToken(refreshToken)
-//                        .orElseThrow(() -> new ArtezanException("Token could not be found"));
-//                token.setAccessToken(accessToken);
-//                artezanTokenService.saveToken(token);
-//                final JwtService.Tokens newTokens = new JwtService.Tokens(accessToken, refreshToken);
-//                response.setContentType(MediaType.APPLICATION_JSON_VALUE);
-//                objectMapper.writeValue(response.getOutputStream(), newTokens);
-//                // new ObjectMapper().writeValue(response.getOutputStream(), newTokens);
-//            }
-//        }
-//    }
 }
 
 

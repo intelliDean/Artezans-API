@@ -39,8 +39,10 @@ app:
   name: ${APP_NAME}
   email: ${APP_EMAIL}
 
-frontend_url: ${FRONTEND_URL}
+
 charges: ${CHARGES}
+frontend:
+  url: ${FRONTEND_URL}
 
 # ── Brevo (email + SMS) ───────────────────────────────────────────────────────
 sendinblue:

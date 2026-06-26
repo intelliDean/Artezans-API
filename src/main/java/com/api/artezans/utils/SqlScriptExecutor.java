@@ -24,8 +24,7 @@ public class SqlScriptExecutor {
     public void executeScript(String scriptLocation) {  //example of scriptLocation is: script/test_script.sql
         ClassPathResource classPathResource = new ClassPathResource(scriptLocation);
         JdbcTemplate jdbcTemplate = new JdbcTemplate(dataSource);
-        try {
-            Connection connection = Objects.requireNonNull(jdbcTemplate.getDataSource()).getConnection();
+        try (Connection connection = Objects.requireNonNull(jdbcTemplate.getDataSource()).getConnection()) {
             ScriptUtils.executeSqlScript(connection, classPathResource);
         } catch (SQLException e) {
             throw new ArtezanException("invalid script location: " + scriptLocation);

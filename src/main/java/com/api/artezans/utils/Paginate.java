@@ -7,7 +7,7 @@ import java.util.List;
 
 
 @Builder
-public record Paginate<T>(
+public record Paginate<T> (
         Long totalElements,
         Long totalPages,
         Long pageNumber,

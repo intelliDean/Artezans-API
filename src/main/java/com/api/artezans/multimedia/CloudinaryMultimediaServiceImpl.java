@@ -4,27 +4,69 @@ import com.api.artezans.exceptions.ArtezanException;
 import com.cloudinary.Cloudinary;
 import com.cloudinary.utils.ObjectUtils;
 import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 
 @Service
-@AllArgsConstructor
+@RequiredArgsConstructor
 @Profile("!default")
 public class CloudinaryMultimediaServiceImpl implements MultimediaService {
 
     private final Cloudinary cloudinary;
 
+    private static final Set<String> ALLOWED_TYPES = Set.of(
+            "image/jpeg", "image/png", "image/webp", "image/gif"
+    );
+
     @Override
     public String upload(MultipartFile image) {
+        validateImage(image);
         try {
-            Map<?, ?> response = cloudinary.uploader().upload(image.getBytes(), ObjectUtils.emptyMap());
-            return response.get("url").toString();
+            Map<?, ?> response = cloudinary.uploader()
+                    .upload(image.getBytes(), buildUploadOptions());
+            return Optional.ofNullable(response.get("secure_url"))
+                    .map(Object::toString)
+                    .orElseThrow(() -> new ArtezanException("Failed to get URL from Cloudinary"));
         } catch (IOException ex) {
-            throw new ArtezanException(ex.getMessage());
+            throw new ArtezanException("Image upload failed: " + ex.getMessage());
         }
+    }
+
+    @Override
+    public List<String> upload(Set<MultipartFile> images) {
+        if (images == null || images.isEmpty()) {
+            throw new ArtezanException("Images set cannot be null or empty");
+        }
+        return images.stream()
+                .map(this::upload) // reuses single upload ✅
+                .toList();
+    }
+
+    private void validateImage(MultipartFile image) {
+        if (image == null || image.isEmpty()) {
+            throw new ArtezanException("Image file cannot be null or empty");
+        }
+        if (!ALLOWED_TYPES.contains(image.getContentType())) {
+            throw new ArtezanException(
+                    "Invalid file type. Allowed: JPEG, PNG, WEBP, GIF"
+            );
+        }
+    }
+
+    private Map<String, Object> buildUploadOptions() {
+        return ObjectUtils.asMap(
+                "folder", "artezan",
+                "resource_type", "image",
+                "quality", "auto",
+                "fetch_format", "auto"
+        );
     }
 }

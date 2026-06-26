@@ -46,7 +46,7 @@ public interface ListingRepository extends JpaRepository<Listing, Long> {
             SELECT listing FROM Listing listing
             WHERE lower(listing.serviceName) = lower(:serviceName)
             AND (lower(listing.address.streetName) = lower(:location) OR
-                 lower(listing.address.suburb) = lower(:location) OR
+                 lower(listing.address.city) = lower(:location) OR
                  lower(listing.address.state) = lower(:location) OR
                  (:location IS NULL OR :location = ''))
             """)

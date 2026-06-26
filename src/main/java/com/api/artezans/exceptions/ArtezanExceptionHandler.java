@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 @Slf4j
 @RestControllerAdvice
@@ -36,7 +37,7 @@ public class ArtezanExceptionHandler {
         e.getBindingResult().getFieldErrors()
                 .forEach(err -> fieldErrors.put(err.getField(), err.getDefaultMessage()));
         return ResponseEntity.badRequest().body(ArtezanExceptionResponse.builder()
-                .message(e.getFieldError().getDefaultMessage().toUpperCase())
+                .message(Objects.requireNonNull(Objects.requireNonNull(e.getFieldError()).getDefaultMessage()).toUpperCase())
                 .status(HttpStatus.BAD_REQUEST)
                 .data(fieldErrors)
                 .build());

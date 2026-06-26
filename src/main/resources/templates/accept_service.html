@@ -1,138 +1,133 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Accept Task</title>
-     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Poppins&display=swap');
-
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Service Accepted</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
         * {
             margin: 0;
             padding: 0;
-            font-family: 'Poppins', sans-serif;
+            box-sizing: border-box;
         }
-
-         .name {
-            max-width: 500px;
-            margin: auto;
-            font-size: 17px;
-            font-weight: bold
+        body {
+            background-color: #f8fafc;
+            font-family: 'Poppins', 'Inter', -apple-system, sans-serif;
+            color: #1e293b;
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+            padding: 40px 20px;
         }
-        .wrapper {
-            max-width: 500px;
-            margin: auto;
-            padding: 30px 20px;
-            background-color: white;
-            box-shadow: /* Bottom shadow / 0px 1px 0px black, / Left shadow / -1px 0px 0px black, / Right shadow / 1px 0px 0px black, / No top shadow */ 0px 0px 0px 0px;
+        .container {
+            max-width: 540px;
+            margin: 0 auto;
+            background-color: #ffffff;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
+            border: 1px solid #f1f5f9;
         }
-
-        /* header  */
         .header {
-            display: flex;
-            justify-content: center;
-            align-items: center;
+            background: linear-gradient(135deg, #4f46e5, #6366f1);
+            padding: 40px 30px;
+            text-align: center;
+            color: #ffffff;
         }
-
         .header img {
-            width: 30px;
+            width: 36px;
+            height: 36px;
+            vertical-align: middle;
+            margin-right: 12px;
         }
-
-        .header h2 {
-            font-size: 17px;
+        .header h1 {
+            display: inline-block;
+            font-size: 24px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+            vertical-align: middle;
         }
-
-        /* first row */
-        .row1 {
-            margin: 30px 0 20px;
+        .content {
+            padding: 40px 30px;
+        }
+        .greeting {
+            font-size: 18px;
+            font-weight: 600;
+            color: #0f172a;
+            margin-bottom: 20px;
+        }
+        .message-body {
             font-size: 15px;
+            color: #334155;
+            margin-bottom: 24px;
             text-align: justify;
         }
-
-        .row1 .welcome {
-            margin: 15px 0;
+        .highlight {
+            font-weight: 600;
+            color: #4f46e5;
         }
-
-        /* button  */
-        .wrapper .btn {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-direction: column;
+        .regards {
+            font-size: 14px;
+            color: #64748b;
+            border-top: 1px solid #e2e8f0;
+            padding-top: 24px;
+            margin-top: 30px;
         }
-
-        .wrapper .btn a {
-            padding: 15px 30px;
-            border-radius: 5px;
-            outline: none;
-            border: none;
-            background-color: #381F8C;
-            text-decoration: none;
-            color: white;
-
+        .regards-company {
+            font-weight: 600;
+            color: #0f172a;
+            margin-top: 4px;
         }
-
-        .wrapper .btn a:hover {
-            background-color: #25155D;
-        }
-
-
-        .wrapper .btn h3 {
-            margin: 15px 0;
-        }
-
-        .wrapper .alt-link p {
-            margin-top: 20px;
-        }
-
-        /* regards  */
-        .wrapper .regards {
-            margin-top: 25px;
-        }
-
         .footer {
-            background-color: #f2f2f2;
-            padding: 10px 0;
-            align-content: center;
             text-align: center;
-            margin-top: 450px;
-            border-radius: 10px;
-            color: #666;
+            padding: 30px;
+            background-color: #f8fafc;
+            border-top: 1px solid #f1f5f9;
         }
-
-         /*Mobile styles */
-        @media screen and (max-width: 600px) {
-            .container {
+        .footer p {
+            font-size: 12px;
+            color: #94a3b8;
+        }
+        @media (max-width: 600px) {
+            body {
                 padding: 10px;
-                height: 100vh;
+            }
+            .content {
+                padding: 30px 20px;
             }
         }
     </style>
 </head>
 <body>
-<div class="wrapper">
+<div class="container">
     <div class="header">
-        <a href="https://taskhub.com" target="_blank">
-            <img src="./logo.png" alt="Taskhub Logo">
+        <a href="https://artezans.com" target="_blank" style="text-decoration: none; color: #ffffff;">
+            <img src="./logo.png" alt="Artezan Logo">
+            <h1>Artezan</h1>
         </a>
-        <h2>TaskHUB</h2>
     </div>
-    <div class="row1">
-        <p class="dear"><b>Dear <span th:text="${firstName}"/></b>,</p>
 
-        <p class="welcome">I am writing to inform you that <span th:text="${customerName}"></span> has accepted the <span
-        th:text="${serviceName}"></span> service render to them.</p>
+    <div class="content">
+        <p class="greeting">Dear <span th:text="${firstName}"/>,</p>
 
-        <p>Please generate invoice for this service rendered so your payment could be processed.</p><br>
-        <p>Thank you for your service.</p>
-    </div>
-    <div class="regards">
-        <p>Best Regards,</p>
-        <p><b>TaskHUB Management</b></p>
-    </div>
-    <div class="footer">
-        <p>
-            TaskHUB &copy; 2023. All rights reserved.
+        <p class="message-body">
+            We are pleased to inform you that <span class="highlight" th:text="${customerName}"></span> has accepted the <span class="highlight" th:text="${serviceName}"></span> artezanService you rendered to them.
         </p>
+        <p class="message-body">
+            Please generate the invoice for this artezanService in your provider dashboard so that the payment process can be initiated.
+        </p>
+        <p class="message-body">
+            Thank you for delivering excellent artezanService!
+        </p>
+
+        <div class="regards">
+            <p>Best Regards,</p>
+            <p class="regards-company">Artezan Management Team</p>
+        </div>
+    </div>
+
+    <div class="footer">
+        <p>Artezan &copy; 2026. All rights reserved.</p>
     </div>
 </div>
 </body>

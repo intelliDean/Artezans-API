@@ -11,11 +11,18 @@ public class NoAuth {
                 "/api/v1/customer/login",
                 "/api/v1/service_provider/login",
                 "/api/v1/customer/complete",
-                "/api/v1/user/**",
                 "/api/v1/service_provider/complete",
                 "/api/v1/change-password/change",
                 "/api/v1/auth/**",
-                "/api/v1/booking/stripe-webhook",
+                // User endpoints that must be public (deactivated users have no JWT)
+                "/api/v1/user/verify",
+                "/api/v1/user/forgot-password",
+                "/api/v1/user/reset-password",
+                "/api/v1/user/activation-mail",
+                "/api/v1/user/reactivate",
+                "/api/v1/stripe/webhook",
+                "/api/v1/paypal/pay/success",
+                "/api/v1/paypal/pay/cancel",
                 "/error"
         };
     }

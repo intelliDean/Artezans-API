@@ -4,15 +4,16 @@ import com.api.artezans.admin.AdminService;
 import com.api.artezans.authentication.dtos.AuthRequest;
 import com.api.artezans.authentication.dtos.AuthResponse;
 import com.api.artezans.authentication.services.AuthService;
-import com.api.artezans.authentication.services.AuthServiceImpl;
-import com.api.artezans.category.controller.ServiceCategoryController;
+import com.api.artezans.category.data.dtos.CategoryDTO;
 import com.api.artezans.category.data.dtos.CategoryNameDto;
 import com.api.artezans.category.data.dtos.CategoryRequest;
 import com.api.artezans.category.data.model.Category;
-import com.api.artezans.listings.controller.ListingController;
+import com.api.artezans.category.service.interfaces.CategoryNameService;
+import com.api.artezans.category.service.interfaces.CategoryService;
 import com.api.artezans.listings.data.models.Listing;
-import com.api.artezans.task.controller.TaskController;
+import com.api.artezans.listings.services.ListingService;
 import com.api.artezans.task.data.model.Task;
+import com.api.artezans.task.service.TaskService;
 import com.api.artezans.utils.ApiResponse;
 import com.api.artezans.utils.Paginate;
 import com.api.artezans.utils.SqlScriptExecutor;
@@ -26,7 +27,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-import static com.api.artezans.gateway.admin.AdminUtil.*;
+import static com.api.artezans.gateway.admin.AdminConstants.*;
 import static com.api.artezans.gateway.admin.ServiceCategoryUtil.*;
 import static com.api.artezans.gateway.listing.ListingUtil.*;
 import static com.api.artezans.gateway.task.TaskUtil.*;
@@ -41,9 +42,10 @@ public class AdminGateway {
     private final AdminService adminService;
     private final AuthService authService;
     private final SqlScriptExecutor sqlScriptExecutor;
-    private final ServiceCategoryController serviceCategoryController;
-    private final ListingController listingController;
-    private final TaskController taskController;
+    private final CategoryNameService categoryNameService;
+    private final CategoryService categoryService;
+    private final ListingService listingController;
+    private final TaskService taskController;
 
     @PostMapping("login")
     @Operation(summary = LOGIN_SUMMARY, description = LOGIN_DESCRIPTION, operationId = LOGIN_OP_ID)
@@ -80,14 +82,14 @@ public class AdminGateway {
     @Operation(summary = CAT_NAME_SUM, description = CAT_NAME_DESC, operationId = CAT_NAME_OP_ID)
     public ResponseEntity<ApiResponse> addCategoryName(@RequestBody List<CategoryNameDto> categoryNames) {
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(serviceCategoryController.addCategoryName(categoryNames));
+                .body(categoryNameService.addCategoryName(categoryNames));
     }
 
     @GetMapping("all-category-names")
     @Operation(summary = ALL_CAT_NAME_SUM, description = ALL_CAT_NAME_DESC, operationId = ALL_CAT_NAME_OP_ID)
     public ResponseEntity<List<String>> getCategoryNames() {
         return ResponseEntity.ok(
-                serviceCategoryController.getCategoryNames()
+                categoryNameService.findAllCategoryNames()
         );
     }
 
@@ -96,14 +98,14 @@ public class AdminGateway {
     @Operation(summary = SERV_CAT_NAME_SUM, description = SERV_CAT_NAME_DESC, operationId = SERV_CAT_NAME_OP_ID)
     public ResponseEntity<ApiResponse> addServiceCategory(@RequestBody CategoryRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(serviceCategoryController.addServiceCategory(request));
+                .body(categoryService.addServiceCategory(request));
     }
 
-    @GetMapping("get-service-name/{categoryName}")
+    @GetMapping("get-service-names/{categoryName}")
     @Operation(summary = BY_CAT_NAME_SUM, description = BY_CAT_NAME_DESC, operationId = BY_CAT_NAME_OP_ID)
     public ResponseEntity<List<String>> viewServicesByCategoryName(@PathVariable String categoryName) {
         return ResponseEntity.ok(
-                serviceCategoryController.viewServicesByCategoryName(categoryName)
+                categoryService.viewServicesByCategoryName(categoryName)
         );
     }
 
@@ -112,15 +114,15 @@ public class AdminGateway {
     @Operation(summary = DEL_CAT_NAME_SUM, description = DEL_CAT_NAME_DESC, operationId = DEL_CAT_NAME_OP_ID)
     public ResponseEntity<ApiResponse> deleteCategoryName(@RequestBody CategoryNameDto categoryName) {
         return ResponseEntity.ok(
-                serviceCategoryController.deleteCategoryName(categoryName)
+                categoryNameService.deleteCategoryName(categoryName)
         );
     }
 
     @GetMapping("categories")
     @Operation(summary = VIEW_ALL_CATS_SUM, description = VIEW_ALL_CATS_DESC, operationId = VIEW_ALL_CATS_OP_ID)
-    public ResponseEntity<List<Category>> viewCategories() {
+    public ResponseEntity<List<CategoryDTO>> viewCategories() {
         return ResponseEntity.ok(
-                serviceCategoryController.viewAllCategories()
+                categoryService.viewAllCategories()
         );
     }
 

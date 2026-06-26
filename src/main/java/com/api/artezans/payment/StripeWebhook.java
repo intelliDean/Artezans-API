@@ -1,11 +1,13 @@
 package com.api.artezans.payment;
 
 import com.api.artezans.booking.service.BookingService;
-import com.stripe.exception.StripeException;
 import com.stripe.model.Event;
+import com.stripe.model.PaymentIntent;
+import com.stripe.model.Charge;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+
 @Slf4j
 @Service
 @AllArgsConstructor
@@ -14,7 +16,7 @@ public class StripeWebhook {
     private final BookingService bookingService;
 
 
-    public void handlingEvents(Event event) throws StripeException {
+    public void handlingEvents(Event event) {
 
         switch (event.getType()) {
 
@@ -23,6 +25,19 @@ public class StripeWebhook {
             }
             case "charge.succeeded" -> {
                 log.info("<<>> Charge succeeded <<>>");
+                event.getDataObjectDeserializer().getObject().ifPresent(stripeObject -> {
+                    if (stripeObject instanceof Charge charge) {
+                        String bookingIdStr = charge.getMetadata().get("Booking ID");
+                        if (bookingIdStr != null) {
+                            try {
+                                Long bookingId = Long.parseLong(bookingIdStr);
+                                bookingService.updateBookingAfterPayment(bookingId);
+                            } catch (Exception e) {
+                                log.error("Failed to update booking status after Charge succeeded: {}", e.getMessage(), e);
+                            }
+                        }
+                    }
+                });
             }
             case "checkout.session.completed" -> {
                 log.info("<<>> Checkout Session Completed <<>>");
@@ -41,6 +56,19 @@ public class StripeWebhook {
             }
             case "payment_intent.succeeded" -> {
                 log.info("<<>> Payment Intent Succeeded <<>>");
+                event.getDataObjectDeserializer().getObject().ifPresent(stripeObject -> {
+                    if (stripeObject instanceof PaymentIntent paymentIntent) {
+                        String bookingIdStr = paymentIntent.getMetadata().get("Booking ID");
+                        if (bookingIdStr != null) {
+                            try {
+                                Long bookingId = Long.parseLong(bookingIdStr);
+                                bookingService.updateBookingAfterPayment(bookingId);
+                            } catch (Exception e) {
+                                log.error("Failed to update booking status after PaymentIntent succeeded: {}", e.getMessage(), e);
+                            }
+                        }
+                    }
+                });
             }
             case "price.created" -> {
                 log.info("<<>> Payment Created Successfully <<>>");

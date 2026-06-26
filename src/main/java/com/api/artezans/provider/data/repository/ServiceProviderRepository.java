@@ -8,6 +8,8 @@ import org.springframework.stereotype.Repository;
 import java.util.Optional;
 @Repository
 public interface ServiceProviderRepository extends JpaRepository<ServiceProvider, Long> {
+
     Optional<ServiceProvider> findServiceProviderByUserEmailAddress(String emailAddress);
+
     boolean existsByUserEmailAddressIgnoreCase(String emailAddress);
 }

@@ -26,7 +26,7 @@ export const Header = () => {
         </a>
 
         <div className="nav-links">
-          <a href="#" className="nav-link">Browse Listings</a>
+          <a href="/listings" className="nav-link">Browse Listings</a>
           <a href="#" className="nav-link">Browse Tasks</a>
           <a href="#" className="nav-link" onClick={handlePostTaskClick} style={{ color: 'var(--success)', fontWeight: 'bold' }}>
             Post a Task

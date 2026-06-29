@@ -4,6 +4,7 @@ import { PublicLayout } from './layouts/PublicLayout';
 import { Home } from './pages/Home';
 import { CustomerDashboard } from './pages/CustomerDashboard';
 import { ProviderWorkspace } from './pages/ProviderWorkspace';
+import { BrowseListings } from './pages/BrowseListings';
 import './App.css';
 
 function AppRoutes() {
@@ -17,17 +18,12 @@ function AppRoutes() {
         <Route path="/dashboard/customer" element={<CustomerDashboard />} />
         <Route path="/dashboard/provider" element={<ProviderWorkspace />} />
         
-        {/* Placeholder routes for listings and tasks */}
-        <Route path="/listings" element={
-          <div className="container" style={{ padding: '3rem 1.5rem' }}>
-            <h2>Service Listings</h2>
-            <p style={{ color: 'var(--text-secondary)' }}>Standard packages directory is coming soon in Step 3!</p>
-          </div>
-        } />
+        {/* Listings & Tasks Routes */}
+        <Route path="/listings" element={<BrowseListings />} />
         <Route path="/tasks" element={
           <div className="container" style={{ padding: '3rem 1.5rem' }}>
             <h2>Custom Tasks Board</h2>
-            <p style={{ color: 'var(--text-secondary)' }}>Full search-enabled task listings are coming soon in Step 3!</p>
+            <p style={{ color: 'var(--text-secondary)' }}>Full task board search is coming in the next step!</p>
           </div>
         } />
       </Route>

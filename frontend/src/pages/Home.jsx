@@ -4,14 +4,14 @@ import { CategoryGrid } from '../components/marketplace/CategoryGrid';
 import { TaskBoardFeed } from '../components/marketplace/TaskBoardFeed';
 
 export const Home = () => {
-  const { isAuthenticated, openLoginModal } = useAuth();
+  const { isAuthenticated, openLoginModal, openPostTaskModal } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
 
   const handlePostTaskClick = () => {
     if (!isAuthenticated) {
       openLoginModal();
     } else {
-      alert('Task posting form will be built in Step 3! Stay tuned.');
+      openPostTaskModal();
     }
   };
 

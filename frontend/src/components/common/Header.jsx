@@ -1,11 +1,22 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 
 export const Header = () => {
-  const { user, isAuthenticated, isLoading, openLoginModal, logout } = useAuth();
+  const { user, isAuthenticated, isLoading, openLoginModal, openPostTaskModal, logout } = useAuth();
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const navigate = useNavigate();
 
   const toggleDropdown = () => setDropdownOpen(!dropdownOpen);
+
+  const handlePostTaskClick = (e) => {
+    e.preventDefault();
+    if (isAuthenticated) {
+      openPostTaskModal();
+    } else {
+      openLoginModal();
+    }
+  };
 
   return (
     <nav className="navbar">
@@ -17,6 +28,9 @@ export const Header = () => {
         <div className="nav-links">
           <a href="#" className="nav-link">Browse Listings</a>
           <a href="#" className="nav-link">Browse Tasks</a>
+          <a href="#" className="nav-link" onClick={handlePostTaskClick} style={{ color: 'var(--success)', fontWeight: 'bold' }}>
+            Post a Task
+          </a>
           
           {isLoading ? (
             <span style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>Loading...</span>
@@ -56,6 +70,12 @@ export const Header = () => {
                   }}>
                     Role: {user.roles?.[0] || 'CUSTOMER'}
                   </span>
+                  <button 
+                    className="dropdown-item" 
+                    onClick={() => { navigate('/dashboard/customer'); setDropdownOpen(false); }}
+                  >
+                    My Dashboard
+                  </button>
                   <button 
                     className="dropdown-item" 
                     onClick={() => { logout(); setDropdownOpen(false); }}

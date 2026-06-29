@@ -8,6 +8,7 @@ export const AuthProvider = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
+  const [isPostTaskModalOpen, setIsPostTaskModalOpen] = useState(false);
 
   // Define logout first so it can be referenced in callbacks
   const logout = useCallback(async () => {
@@ -96,6 +97,9 @@ export const AuthProvider = ({ children }) => {
   const openLoginModal = () => setIsLoginModalOpen(true);
   const closeLoginModal = () => setIsLoginModalOpen(false);
 
+  const openPostTaskModal = () => setIsPostTaskModalOpen(true);
+  const closePostTaskModal = () => setIsPostTaskModalOpen(false);
+
   return (
     <AuthContext.Provider
       value={{
@@ -103,10 +107,13 @@ export const AuthProvider = ({ children }) => {
         isAuthenticated,
         isLoading,
         isLoginModalOpen,
+        isPostTaskModalOpen,
         login,
         logout,
         openLoginModal,
-        closeLoginModal
+        closeLoginModal,
+        openPostTaskModal,
+        closePostTaskModal
       }}
     >
       {children}

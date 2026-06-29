@@ -1,6 +1,7 @@
 import { Outlet } from 'react-router-dom';
 import { Header } from '../components/common/Header';
 import { LoginModal } from '../components/auth/LoginModal';
+import { PostTaskModal } from '../components/marketplace/PostTaskModal';
 
 export const PublicLayout = () => {
   return (
@@ -9,8 +10,9 @@ export const PublicLayout = () => {
       <main style={{ flex: 1 }}>
         <Outlet />
       </main>
-      {/* Global quick-auth modal */}
+      {/* Global modals */}
       <LoginModal />
+      <PostTaskModal />
     </div>
   );
 };

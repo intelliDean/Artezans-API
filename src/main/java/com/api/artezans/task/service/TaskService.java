@@ -18,4 +18,5 @@ public interface TaskService {
 
     ApiResponse deactivateTask(Long postId, User user); // renamed + simplified params
 
+    List<Task> findTasksByPoster(User user);
 }

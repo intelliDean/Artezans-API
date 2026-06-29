@@ -66,7 +66,7 @@ public class Task {
     @Column(length = 500)
     private String taskImageUrl;
 
-    @ElementCollection
+    @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "task_dates", joinColumns = @JoinColumn(name = "task_id"))
     @Column(name = "task_date", nullable = false)
     private Set<LocalDate> taskDates;

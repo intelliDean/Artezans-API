@@ -40,6 +40,13 @@ public class TaskGateway {
         return ResponseEntity.ok(taskService.findActiveTasks());
     }
 
+    @GetMapping("my-tasks")
+    @PreAuthorize("hasAnyAuthority('CUSTOMER', 'SERVICE_PROVIDER')")
+    @Operation(summary = "Get tasks posted by current user")
+    public ResponseEntity<List<Task>> findMyTasks(@CurrentUser SecuredUser currentUser) {
+        return ResponseEntity.ok(taskService.findTasksByPoster(currentUser.getUser()));
+    }
+
     @PostMapping("delete-task/{postId}")
     @Operation(summary = DELETE_TASK_SUM, description = DELETE_TASK_DESC, operationId = DELETE_TASK_OP_ID)
     public ResponseEntity<ApiResponse> deleteTask(@PathVariable Long postId, @CurrentUser SecuredUser currentUser) {

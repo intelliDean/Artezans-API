@@ -75,6 +75,11 @@ public class TaskServiceImpl implements TaskService {
         return apiResponse("Task deactivated successfully");
     }
 
+    @Override
+    public List<Task> findTasksByPoster(User user) {
+        return taskRepository.findAllByPoster(user);
+    }
+
     private Task createTask(User user, TaskRequest request) {
         return Task.builder()
                 .poster(user)

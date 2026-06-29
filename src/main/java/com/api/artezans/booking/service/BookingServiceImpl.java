@@ -88,6 +88,11 @@ public class BookingServiceImpl implements BookingService {
     }
 
     @Override
+    public List<Booking> findBookingsByProvider(User user) {
+        return bookingRepository.findAllByListingServiceProviderUser(user);
+    }
+
+    @Override
     @Transactional(propagation = REQUIRED)
     public ApiResponse bookService(BookingRequest request, SecuredUser securedUser) {
 

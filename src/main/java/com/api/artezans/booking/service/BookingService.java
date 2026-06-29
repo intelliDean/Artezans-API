@@ -16,6 +16,8 @@ public interface BookingService {
 
     List<Booking> findBookingsByUser(User user);
 
+    List<Booking> findBookingsByProvider(User user);
+
     ApiResponse bookService(BookingRequest request, SecuredUser user);
 
     ApiResponse acceptProposal(Long bookingId, SecuredUser securedUser);

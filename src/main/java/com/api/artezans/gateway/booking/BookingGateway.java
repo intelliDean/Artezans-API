@@ -49,6 +49,13 @@ public class BookingGateway {
         return ResponseEntity.ok(bookingService.findBookingsByUser(currentUser.getUser()));
     }
 
+    @GetMapping("provider-bookings")
+    @PreAuthorize("hasAuthority('SERVICE_PROVIDER')")
+    @Operation(summary = "Get bookings of current provider")
+    public ResponseEntity<List<Booking>> findProviderBookings(@CurrentUser SecuredUser currentUser) {
+        return ResponseEntity.ok(bookingService.findBookingsByProvider(currentUser.getUser()));
+    }
+
     @PostMapping("accept-proposal")
     @Operation(summary = ACCEPT_PROPOSAL_SUM, description = ACCEPT_PROPOSAL_DESC, operationId = ACCEPT_PROPOSAL_OP_ID)
     public ResponseEntity<ApiResponse> acceptProposal(@RequestParam Long bookingId, @CurrentUser SecuredUser currentUser) {

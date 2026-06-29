@@ -3,6 +3,7 @@ import { AuthProvider } from './context/AuthContext';
 import { PublicLayout } from './layouts/PublicLayout';
 import { Home } from './pages/Home';
 import { CustomerDashboard } from './pages/CustomerDashboard';
+import { ProviderWorkspace } from './pages/ProviderWorkspace';
 import './App.css';
 
 function AppRoutes() {
@@ -12,8 +13,9 @@ function AppRoutes() {
         {/* Public Homepage Route */}
         <Route path="/" element={<Home />} />
         
-        {/* Customer Dashboard Protected Route */}
+        {/* Protected Dashboard Routes */}
         <Route path="/dashboard/customer" element={<CustomerDashboard />} />
+        <Route path="/dashboard/provider" element={<ProviderWorkspace />} />
         
         {/* Placeholder routes for listings and tasks */}
         <Route path="/listings" element={

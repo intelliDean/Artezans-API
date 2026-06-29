@@ -72,7 +72,11 @@ export const Header = () => {
                   </span>
                   <button 
                     className="dropdown-item" 
-                    onClick={() => { navigate('/dashboard/customer'); setDropdownOpen(false); }}
+                    onClick={() => { 
+                      const isProvider = user.roles?.includes('SERVICE_PROVIDER') || user.roles?.includes('ROLE_SERVICE_PROVIDER');
+                      navigate(isProvider ? '/dashboard/provider' : '/dashboard/customer'); 
+                      setDropdownOpen(false); 
+                    }}
                   >
                     My Dashboard
                   </button>

@@ -2,6 +2,7 @@ package com.api.artezans.gateway.booking;
 
 import com.api.artezans.booking.data.dto.BookingRequest;
 import com.api.artezans.booking.data.dto.RejectionRequest;
+import com.api.artezans.booking.data.model.Booking;
 import com.api.artezans.booking.service.BookingService;
 import com.api.artezans.config.annotation.CurrentUser;
 import com.api.artezans.config.security.SecuredUser;
@@ -16,6 +17,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 import static com.api.artezans.gateway.booking.BookingUtil.*;
 
@@ -39,6 +42,12 @@ public class BookingGateway {
                 .body(bookingService.bookService(request, securedUser));
     }
 
+    @GetMapping("my-bookings")
+    @PreAuthorize("hasAnyAuthority('CUSTOMER', 'SERVICE_PROVIDER')")
+    @Operation(summary = "Get bookings of current user")
+    public ResponseEntity<List<Booking>> findMyBookings(@CurrentUser SecuredUser currentUser) {
+        return ResponseEntity.ok(bookingService.findBookingsByUser(currentUser.getUser()));
+    }
 
     @PostMapping("accept-proposal")
     @Operation(summary = ACCEPT_PROPOSAL_SUM, description = ACCEPT_PROPOSAL_DESC, operationId = ACCEPT_PROPOSAL_OP_ID)

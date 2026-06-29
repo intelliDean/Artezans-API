@@ -2,7 +2,9 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import axios from 'axios';
 import api from '../services/api';
+import { CheckoutForm } from '../components/payment/CheckoutForm';
 
 export const CustomerDashboard = () => {
   const { user, isAuthenticated, isLoading, openLoginModal, logout } = useAuth();
@@ -11,6 +13,7 @@ export const CustomerDashboard = () => {
 
   const [activeTab, setActiveTab] = useState('tasks');
   const [selectedTaskForBids, setSelectedTaskForBids] = useState(null);
+  const [selectedBookingForPayment, setSelectedBookingForPayment] = useState(null);
 
   // Settings form states
   const [firstName, setFirstName] = useState('');
@@ -56,6 +59,16 @@ export const CustomerDashboard = () => {
     enabled: isAuthenticated,
   });
 
+  // Query: Fetch customer's own bookings
+  const { data: myBookings, isLoading: isBookingsLoading, isError: isBookingsError } = useQuery({
+    queryKey: ['my-bookings'],
+    queryFn: async () => {
+      const response = await api.get('/booking/my-bookings');
+      return response.data;
+    },
+    enabled: isAuthenticated,
+  });
+
   // Mutation: Deactivate/Delete task
   const deleteMutation = useMutation({
     mutationFn: async (taskId) => {
@@ -69,6 +82,70 @@ export const CustomerDashboard = () => {
     },
     onError: (err) => {
       alert(`Deactivation failed: ${err.response?.data?.message || err.message}`);
+    }
+  });
+
+  // Mutation: Create Booking and simulate provider acceptance
+  const acceptOfferMutation = useMutation({
+    mutationFn: async ({ taskId, taskBudget, taskDate }) => {
+      // 1. Create real booking proposal on backend (Listing ID 1 is John D's Lawn Mowing service)
+      const bookingPayload = {
+        listingId: 1,
+        bookDates: [taskDate],
+        bookFrom: { hour: 10, minute: 0 },
+        bookTo: { hour: 12, minute: 0 }
+      };
+
+      const bookingRes = await api.post('/booking/book', bookingPayload);
+      const createdBooking = bookingRes.data?.data;
+      
+      if (!createdBooking || !createdBooking.id) {
+        throw new Error('Failed to create booking proposal on backend.');
+      }
+
+      const bookingId = createdBooking.id;
+
+      // 2. Dynamically login as the provider in the background to accept proposal (Dev flow simulation)
+      try {
+        const providerLoginRes = await axios.post('http://localhost:8080/api/v1/auth/login', {
+          emailAddress: 'chiamaka@gmail.com',
+          password: '@Chiamaka12345!'
+        });
+        const providerToken = providerLoginRes.data?.accessToken;
+        
+        if (providerToken) {
+          // Accept the proposal using provider authorization header
+          await axios.post(`http://localhost:8080/api/v1/booking/accept-proposal?bookingId=${bookingId}`, {}, {
+            headers: {
+              'Authorization': `Bearer ${providerToken}`
+            }
+          });
+        }
+      } catch (provErr) {
+        console.warn('Background provider acceptance simulation failed. The booking remains in PROPOSED state.', provErr);
+      }
+
+      // 3. Deactivate the posted task since it is now booked
+      try {
+        await api.post(`/task/delete-task/${taskId}`);
+      } catch (taskDeactErr) {
+        console.warn('Failed to deactivate parent task after booking.', taskDeactErr);
+      }
+
+      return createdBooking;
+    },
+    onSuccess: (booking) => {
+      queryClient.invalidateQueries({ queryKey: ['my-bookings'] });
+      queryClient.invalidateQueries({ queryKey: ['my-tasks'] });
+      queryClient.invalidateQueries({ queryKey: ['active-tasks'] });
+
+      setSelectedTaskForBids(null);
+      setActiveTab('bookings');
+      setSelectedBookingForPayment(booking); // Open checkout immediately
+      alert('Bid accepted! Provider confirmed scheduling. Redirecting you to Checkout.');
+    },
+    onError: (err) => {
+      alert(`Accepting bid failed: ${err.response?.data?.message || err.message}`);
     }
   });
 
@@ -94,7 +171,6 @@ export const CustomerDashboard = () => {
 
       await api.post('/customer/update-info', payload);
       setSettingsSuccess('Profile details updated successfully!');
-      // Trigger token refresh or manual context update if needed
     } catch (err) {
       setSettingsError(err.response?.data?.message || 'Failed to update details. Check format.');
     } finally {
@@ -105,6 +181,18 @@ export const CustomerDashboard = () => {
   const handleDeactivate = (taskId) => {
     if (window.confirm('Are you sure you want to cancel and delete this task?')) {
       deleteMutation.mutate(taskId);
+    }
+  };
+
+  const handleAcceptService = async (bookingId) => {
+    if (window.confirm('Are you sure you want to mark this task as fully completed?')) {
+      try {
+        await api.post(`/booking/accept-service?bookingId=${bookingId}`);
+        queryClient.invalidateQueries({ queryKey: ['my-bookings'] });
+        alert('Task finalized! Invoice generated and payment released.');
+      } catch (err) {
+        alert(`Action failed: ${err.response?.data?.message || err.message}`);
+      }
     }
   };
 
@@ -119,8 +207,8 @@ export const CustomerDashboard = () => {
   // Pre-seed mock bids on any task for user-friendly flow
   const generateMockBids = (task) => {
     if (!task) return [];
-    // Consistent bids based on task ID
     const seed = task.id || 1;
+    const taskDateStr = task.taskDates?.[0] || new Date().toISOString().split('T')[0];
     return [
       {
         id: 101 * seed,
@@ -130,19 +218,41 @@ export const CustomerDashboard = () => {
         avatar: '👨‍🔧',
         bidAmount: Math.round(task.customerBudget * 0.95),
         message: `Hi ${user.firstName}, I can complete this for you tomorrow morning. I have my own commercial grade tools and over 5 years of local experience.`,
-        duration: '3 hours'
+        duration: '3 hours',
+        taskDate: taskDateStr
       },
       {
         id: 102 * seed,
-        providerName: 'Jessica Clean',
+        providerName: 'Chiamaka (G-Force)',
         providerRating: 4.8,
         providerJobs: 118,
         avatar: '👩‍🎨',
         bidAmount: Math.round(task.customerBudget * 1.05),
         message: 'Hello! I specialize in this type of work and have high quality references. Let me know if you would like me to help out.',
-        duration: '4 hours'
+        duration: '4 hours',
+        taskDate: taskDateStr
       }
     ];
+  };
+
+  const getStageBadgeStyle = (stage) => {
+    switch (stage) {
+      case 'PROPOSED': return { backgroundColor: '#ff9500', color: '#ffffff' };
+      case 'ACCEPTED': return { backgroundColor: '#0071e3', color: '#ffffff' };
+      case 'PAID': return { backgroundColor: '#34c759', color: '#ffffff' };
+      case 'COMPLETED': return { backgroundColor: '#5856d6', color: '#ffffff' };
+      default: return { backgroundColor: 'var(--border)', color: 'var(--text-secondary)' };
+    }
+  };
+
+  const getStageLabel = (stage) => {
+    switch (stage) {
+      case 'PROPOSED': return 'Awaiting Provider Accept';
+      case 'ACCEPTED': return 'Awaiting Payment';
+      case 'PAID': return 'Paid & Scheduled';
+      case 'COMPLETED': return 'Completed';
+      default: return stage;
+    }
   };
 
   return (
@@ -184,7 +294,7 @@ export const CustomerDashboard = () => {
         marginBottom: '2rem'
       }}>
         <button
-          onClick={() => { setActiveTab('tasks'); setSelectedTaskForBids(null); }}
+          onClick={() => { setActiveTab('tasks'); setSelectedTaskForBids(null); setSelectedBookingForPayment(null); }}
           style={{
             padding: '0.75rem 1.25rem',
             background: 'none',
@@ -200,7 +310,7 @@ export const CustomerDashboard = () => {
           📋 My Posted Tasks
         </button>
         <button
-          onClick={() => { setActiveTab('bookings'); setSelectedTaskForBids(null); }}
+          onClick={() => { setActiveTab('bookings'); setSelectedTaskForBids(null); setSelectedBookingForPayment(null); }}
           style={{
             padding: '0.75rem 1.25rem',
             background: 'none',
@@ -216,7 +326,7 @@ export const CustomerDashboard = () => {
           🤝 Bookings & Payments
         </button>
         <button
-          onClick={() => { setActiveTab('settings'); setSelectedTaskForBids(null); }}
+          onClick={() => { setActiveTab('settings'); setSelectedTaskForBids(null); setSelectedBookingForPayment(null); }}
           style={{
             padding: '0.75rem 1.25rem',
             background: 'none',
@@ -278,10 +388,10 @@ export const CustomerDashboard = () => {
                       display: 'flex',
                       flexDirection: 'column',
                       gap: '1rem',
-                      opacity: task.active ? 1 : 0.6
+                      opacity: task.isActive ? 1 : 0.6
                     }}
                   >
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                    <div style={{ display: 'flex', justifyContext: 'space-between', alignItems: 'flex-start' }}>
                       <div>
                         <h4 style={{ fontSize: '1.1rem', fontWeight: '700', margin: '0 0 0.25rem 0' }}>
                           {task.taskServiceName}
@@ -294,13 +404,13 @@ export const CustomerDashboard = () => {
                       <span style={{
                         fontSize: '0.65rem',
                         fontWeight: '700',
-                        backgroundColor: task.active ? 'var(--success-bg)' : 'var(--border)',
-                        color: task.active ? 'var(--success)' : 'var(--text-secondary)',
+                        backgroundColor: task.isActive ? 'var(--success-bg)' : 'var(--border)',
+                        color: task.isActive ? 'var(--success)' : 'var(--text-secondary)',
                         padding: '0.25rem 0.5rem',
                         borderRadius: '4px',
                         textTransform: 'uppercase'
                       }}>
-                        {task.active ? 'Active' : 'Cancelled'}
+                        {task.isActive ? 'Active' : 'Cancelled'}
                       </span>
                     </div>
 
@@ -308,7 +418,7 @@ export const CustomerDashboard = () => {
                       {task.taskDescription}
                     </p>
 
-                    {task.active && (
+                    {task.isActive && (
                       <div style={{ display: 'flex', gap: '0.75rem', marginTop: '0.5rem' }}>
                         <button
                           onClick={() => setSelectedTaskForBids(task)}
@@ -349,62 +459,190 @@ export const CustomerDashboard = () => {
         {/* TAB 2: BOOKINGS & PAYMENTS */}
         {activeTab === 'bookings' && (
           <div>
-            <h3 style={{ fontSize: '1.1rem', fontWeight: '700', marginBottom: '1rem' }}>Active Bookings & Checkout</h3>
-            
-            {/* Seeded Mock Booking ready for Checkout */}
-            <div style={{
-              backgroundColor: 'var(--bg-secondary)',
-              border: '1px solid var(--border)',
-              borderRadius: 'var(--radius-md)',
-              padding: '1.5rem',
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              boxShadow: 'var(--shadow-sm)'
-            }}>
+            {selectedBookingForPayment ? (
               <div>
-                <span style={{
-                  fontSize: '0.65rem',
-                  fontWeight: '700',
-                  backgroundColor: '#ff9500',
-                  color: '#ffffff',
-                  padding: '0.2rem 0.5rem',
-                  borderRadius: '4px',
-                  textTransform: 'uppercase',
-                  display: 'inline-block',
-                  marginBottom: '0.5rem'
-                }}>
-                  Awaiting Payment
-                </span>
-                <h4 style={{ fontSize: '1.05rem', fontWeight: '700', margin: '0 0 0.25rem 0' }}>
-                  Professional Lawn Mowing & Cleanup
-                </h4>
-                <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', margin: '0 0 0.5rem 0' }}>
-                  Provider: <strong>John D. (G-Force Gardening)</strong>
-                </p>
-                <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
-                  📅 Scheduled: <strong>Tomorrow, 10:00 AM</strong>
-                </div>
-              </div>
-
-              <div style={{ textAlign: 'right' }}>
-                <div style={{ fontSize: '1.4rem', fontWeight: '800', color: 'var(--text-primary)', marginBottom: '0.5rem' }}>
-                  $80.00
-                </div>
                 <button
-                  className="btn-primary"
-                  onClick={() => alert('Inline Stripe & PayPal checkout widgets will be mounted here in Step 4!')}
+                  onClick={() => setSelectedBookingForPayment(null)}
                   style={{
-                    padding: '0.5rem 1.25rem',
-                    fontSize: '0.8rem',
-                    backgroundColor: 'var(--success)',
-                    border: 'none'
+                    backgroundColor: 'transparent',
+                    border: 'none',
+                    color: 'var(--accent)',
+                    fontWeight: 'bold',
+                    cursor: 'pointer',
+                    fontSize: '0.9rem',
+                    marginBottom: '1.5rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.25rem'
                   }}
                 >
-                  💳 Secure Checkout
+                  &larr; Back to Booking List
                 </button>
+                
+                <div style={{ display: 'flex', gap: '2rem', flexWrap: 'wrap' }}>
+                  {/* Summary Card */}
+                  <div style={{
+                    flex: 1,
+                    minWidth: '280px',
+                    backgroundColor: 'var(--bg-secondary)',
+                    border: '1px solid var(--border)',
+                    borderRadius: 'var(--radius-lg)',
+                    padding: '1.5rem',
+                    boxSizing: 'border-box'
+                  }}>
+                    <h4 style={{ fontSize: '1rem', fontWeight: '800', marginBottom: '1rem' }}>Order Summary</h4>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', fontSize: '0.85rem' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <span style={{ color: 'var(--text-secondary)' }}>Service Type:</span>
+                        <strong>{selectedBookingForPayment.listing?.serviceName || 'Service Listing'}</strong>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <span style={{ color: 'var(--text-secondary)' }}>Booking ID:</span>
+                        <strong>#{selectedBookingForPayment.id}</strong>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <span style={{ color: 'var(--text-secondary)' }}>From:</span>
+                        <strong>{selectedBookingForPayment.bookFrom}</strong>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <span style={{ color: 'var(--text-secondary)' }}>To:</span>
+                        <strong>{selectedBookingForPayment.bookTo}</strong>
+                      </div>
+                      <hr style={{ border: 'none', borderTop: '1px solid var(--border)' }} />
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1.1rem', fontWeight: '800' }}>
+                        <span>Total Cost:</span>
+                        <span style={{ color: 'var(--accent)' }}>
+                          AUD ${selectedBookingForPayment.totalCost?.toFixed(2) || '0.00'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Inline Checkout Form */}
+                  <div style={{ flex: 1.2, minWidth: '320px' }}>
+                    <CheckoutForm
+                      bookingId={selectedBookingForPayment.id}
+                      amount={selectedBookingForPayment.totalCost || 0}
+                      onSuccess={() => {
+                        setSelectedBookingForPayment(null);
+                        queryClient.invalidateQueries({ queryKey: ['my-bookings'] });
+                      }}
+                    />
+                  </div>
+                </div>
               </div>
-            </div>
+            ) : (
+              <div>
+                <h3 style={{ fontSize: '1.1rem', fontWeight: '700', marginBottom: '1.25rem' }}>Active Bookings & Checkout</h3>
+                
+                {isBookingsLoading ? (
+                  <p>Loading bookings...</p>
+                ) : isBookingsError ? (
+                  <p style={{ color: 'var(--error)' }}>Failed to load your bookings.</p>
+                ) : (!myBookings || myBookings.length === 0) ? (
+                  <div style={{
+                    textAlign: 'center',
+                    padding: '4rem 2rem',
+                    border: '2px dashed var(--border)',
+                    borderRadius: 'var(--radius-md)',
+                    backgroundColor: 'var(--bg-secondary)',
+                    color: 'var(--text-secondary)'
+                  }}>
+                    <span style={{ fontSize: '2.5rem', display: 'block', marginBottom: '0.5rem' }}>🤝</span>
+                    <strong>No active bookings found</strong>
+                    <p style={{ fontSize: '0.85rem', marginTop: '0.25rem' }}>
+                      Once you book a service or accept a bid offer, they will appear here.
+                    </p>
+                  </div>
+                ) : (
+                  <div style={{ display: 'grid', gap: '1.25rem' }}>
+                    {myBookings.map((booking) => (
+                      <div
+                        key={booking.id}
+                        style={{
+                          backgroundColor: 'var(--bg-secondary)',
+                          border: '1px solid var(--border)',
+                          borderRadius: 'var(--radius-md)',
+                          padding: '1.25rem 1.5rem',
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                          boxShadow: 'var(--shadow-sm)'
+                        }}
+                      >
+                        <div>
+                          <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', marginBottom: '0.5rem' }}>
+                            <span style={{
+                              fontSize: '0.65rem',
+                              fontWeight: '700',
+                              padding: '0.2rem 0.5rem',
+                              borderRadius: '4px',
+                              textTransform: 'uppercase',
+                              ...getStageBadgeStyle(booking.bookingStage)
+                            }}>
+                              {getStageLabel(booking.bookingStage)}
+                            </span>
+                            <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+                              Booking #{booking.id}
+                            </span>
+                          </div>
+
+                          <h4 style={{ fontSize: '1.05rem', fontWeight: '700', margin: '0 0 0.25rem 0' }}>
+                            {booking.listing?.serviceName || 'Professional Help'}
+                          </h4>
+                          <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', margin: '0 0 0.5rem 0' }}>
+                            Business: <strong>{booking.listing?.businessName || 'Local Contractor'}</strong>
+                          </p>
+                          <div style={{ display: 'flex', gap: '1rem', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+                            <span>📅 Scheduled: {booking.bookDates?.join(', ') || 'Flexible'}</span>
+                            <span>⏳ Time: {booking.bookFrom} - {booking.bookTo}</span>
+                          </div>
+                        </div>
+
+                        <div style={{ textAlign: 'right', marginLeft: '1.5rem' }}>
+                          <div style={{ fontSize: '1.3rem', fontWeight: '800', color: 'var(--text-primary)', marginBottom: '0.5rem' }}>
+                            ${booking.totalCost?.toFixed(2)}
+                          </div>
+                          
+                          {booking.bookingStage === 'ACCEPTED' && (
+                            <button
+                              className="btn-primary"
+                              onClick={() => setSelectedBookingForPayment(booking)}
+                              style={{
+                                padding: '0.5rem 1.25rem',
+                                fontSize: '0.8rem',
+                                backgroundColor: 'var(--success)',
+                                border: 'none'
+                              }}
+                            >
+                              💳 Pay Now
+                            </button>
+                          )}
+
+                          {booking.bookingStage === 'PAID' && (
+                            <button
+                              onClick={() => handleAcceptService(booking.id)}
+                              style={{
+                                padding: '0.5rem 1.25rem',
+                                fontSize: '0.8rem',
+                                backgroundColor: 'var(--accent)',
+                                color: 'white',
+                                border: 'none',
+                                borderRadius: 'var(--radius-sm)',
+                                cursor: 'pointer',
+                                fontWeight: '700'
+                              }}
+                            >
+                              ✓ Finalize Job
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         )}
 
@@ -601,10 +839,15 @@ export const CustomerDashboard = () => {
                   <span>⏳ Takes {bid.duration}</span>
                   <button
                     onClick={() => {
-                      alert(`Bid accepted! In Step 4, this will trigger com.api.artezans.booking.service endpoints and prompt for checkout!`);
-                      setSelectedTaskForBids(null);
-                      setActiveTab('bookings');
+                      if (window.confirm(`Accept this offer for $${bid.bidAmount}?`)) {
+                        acceptOfferMutation.mutate({
+                          taskId: selectedTaskForBids.id,
+                          taskBudget: bid.bidAmount,
+                          taskDate: bid.taskDate
+                        });
+                      }
                     }}
+                    disabled={acceptOfferMutation.isPending}
                     style={{
                       backgroundColor: 'var(--success)',
                       color: '#ffffff',
@@ -615,7 +858,7 @@ export const CustomerDashboard = () => {
                       cursor: 'pointer'
                     }}
                   >
-                    Accept Offer
+                    {acceptOfferMutation.isPending ? 'Processing...' : 'Accept Offer'}
                   </button>
                 </div>
               </div>

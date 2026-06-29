@@ -43,7 +43,7 @@ public class Booking {
     @GeneratedValue(strategy = IDENTITY)
     private Long id;
 
-    @ElementCollection
+    @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(
             name = "booking_dates",
             joinColumns = @JoinColumn(name = "booking_id")
@@ -66,7 +66,6 @@ public class Booking {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    @JsonIgnore
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "listing_id", nullable = false)
     private Listing listing;

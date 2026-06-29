@@ -83,6 +83,11 @@ public class BookingServiceImpl implements BookingService {
     // ---------------------------------------------------------------------------
 
     @Override
+    public List<Booking> findBookingsByUser(User user) {
+        return bookingRepository.findAllByUser(user);
+    }
+
+    @Override
     @Transactional(propagation = REQUIRED)
     public ApiResponse bookService(BookingRequest request, SecuredUser securedUser) {
 
@@ -115,7 +120,7 @@ public class BookingServiceImpl implements BookingService {
         bookingRepository.save(booking);
         appNotificationService.saveNotifications(buildNewBookingNotification(listing));
         log.info("Booking proposal [id={}] created for listing [id={}]", booking.getId(), listing.getId());
-        return apiResponse("Booking proposal sent to service provider");
+        return apiResponse(booking, "Booking proposal sent to service provider");
     }
 
     @Override

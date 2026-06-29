@@ -45,6 +45,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Collections;
+import java.util.List;
 
 import static com.api.artezans.utils.ApiResponse.apiResponse;
 import static com.api.artezans.utils.ArtezanUtils.*;
@@ -194,8 +195,6 @@ public class UserServiceImpl implements UserService {
 
         if (artezanVerificationTokenService.isValid(artezanVerificationToken)
                 && softHash.verify(rawEmail, hashedEmail)) {
-            // new BCryptPasswordEncoder().matches(rawEmail, email)) {
-            // taskHubVerificationToken.setRevoked(true);
             User user = findUserByEmail(rawEmail);
             user.setAccountState(AccountState.VERIFIED);
             userRepository.save(user);
@@ -333,5 +332,30 @@ public class UserServiceImpl implements UserService {
         } else {
             throw new ArtezanException("Token has expired");
         }
+    }
+
+    @Override
+    public List<User> findAllUsers() {
+        return userRepository.findAll();
+    }
+
+    @Override
+    public ApiResponse enableUser(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ArtezanException("User not found"));
+        user.setEnabled(true);
+        user.setAccountState(AccountState.VERIFIED);
+        userRepository.save(user);
+        return apiResponse("User account enabled successfully");
+    }
+
+    @Override
+    public ApiResponse disableUser(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ArtezanException("User not found"));
+        user.setEnabled(false);
+        user.setAccountState(AccountState.DEACTIVATED);
+        userRepository.save(user);
+        return apiResponse("User account suspended/disabled successfully");
     }
 }

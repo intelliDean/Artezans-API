@@ -5,6 +5,7 @@ import { Home } from './pages/Home';
 import { CustomerDashboard } from './pages/CustomerDashboard';
 import { ProviderWorkspace } from './pages/ProviderWorkspace';
 import { BrowseListings } from './pages/BrowseListings';
+import { AdminDashboard } from './pages/AdminDashboard';
 import './App.css';
 
 function AppRoutes() {
@@ -17,6 +18,7 @@ function AppRoutes() {
         {/* Protected Dashboard Routes */}
         <Route path="/dashboard/customer" element={<CustomerDashboard />} />
         <Route path="/dashboard/provider" element={<ProviderWorkspace />} />
+        <Route path="/dashboard/admin" element={<AdminDashboard />} />
         
         {/* Listings & Tasks Routes */}
         <Route path="/listings" element={<BrowseListings />} />

@@ -73,8 +73,15 @@ export const Header = () => {
                   <button 
                     className="dropdown-item" 
                     onClick={() => { 
+                      const isAdmin = user.roles?.includes('ADMIN') || user.roles?.includes('ROLE_ADMIN');
                       const isProvider = user.roles?.includes('SERVICE_PROVIDER') || user.roles?.includes('ROLE_SERVICE_PROVIDER');
-                      navigate(isProvider ? '/dashboard/provider' : '/dashboard/customer'); 
+                      if (isAdmin) {
+                        navigate('/dashboard/admin');
+                      } else if (isProvider) {
+                        navigate('/dashboard/provider');
+                      } else {
+                        navigate('/dashboard/customer');
+                      }
                       setDropdownOpen(false); 
                     }}
                   >

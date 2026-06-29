@@ -9,6 +9,8 @@ import com.api.artezans.utils.ApiResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.List;
+
 public interface UserService {
 
     User findUserByEmail(String email);
@@ -46,5 +48,11 @@ public interface UserService {
     ApiResponse sendActivationMail(String emailAddress, HttpServletRequest request);
 
     ApiResponse reactivate(String email, String token);
+
+    List<User> findAllUsers();
+
+    ApiResponse enableUser(Long userId);
+
+    ApiResponse disableUser(Long userId);
 }
 

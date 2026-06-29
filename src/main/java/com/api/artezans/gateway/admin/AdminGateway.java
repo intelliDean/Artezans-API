@@ -14,6 +14,8 @@ import com.api.artezans.listings.data.models.Listing;
 import com.api.artezans.listings.services.ListingService;
 import com.api.artezans.task.data.model.Task;
 import com.api.artezans.task.service.TaskService;
+import com.api.artezans.users.models.User;
+import com.api.artezans.users.services.UserService;
 import com.api.artezans.utils.ApiResponse;
 import com.api.artezans.utils.Paginate;
 import com.api.artezans.utils.SqlScriptExecutor;
@@ -46,17 +48,12 @@ public class AdminGateway {
     private final CategoryService categoryService;
     private final ListingService listingController;
     private final TaskService taskController;
+    private final UserService userService;
 
     @PostMapping("login")
     @Operation(summary = LOGIN_SUMMARY, description = LOGIN_DESCRIPTION, operationId = LOGIN_OP_ID)
     public ResponseEntity<AuthResponse> adminLogin(@RequestBody AuthRequest authRequest) {
         return ResponseEntity.ok(adminService.adminLogin(authRequest));
-    }
-
-    @PostMapping("script")
-    @Operation(summary = "To run script")
-    public void script() {
-        sqlScriptExecutor.executeScript("script/test_script.sql");
     }
 
     @PreAuthorize("hasAuthority('ADMIN')")
@@ -66,6 +63,27 @@ public class AdminGateway {
         return ResponseEntity.ok(
                 listingController.getAllListings(pageNumber)
         );
+    }
+
+    @PreAuthorize("hasAuthority('ADMIN')")
+    @GetMapping("users")
+    @Operation(summary = "Get all users in the system")
+    public ResponseEntity<List<User>> getAllUsers() {
+        return ResponseEntity.ok(userService.findAllUsers());
+    }
+
+    @PreAuthorize("hasAuthority('ADMIN')")
+    @PostMapping("enable-user/{userId}")
+    @Operation(summary = "Enable user account")
+    public ResponseEntity<ApiResponse> enableUser(@PathVariable Long userId) {
+        return ResponseEntity.ok(userService.enableUser(userId));
+    }
+
+    @PreAuthorize("hasAuthority('ADMIN')")
+    @PostMapping("disable-user/{userId}")
+    @Operation(summary = "Disable/suspend user account")
+    public ResponseEntity<ApiResponse> disableUser(@PathVariable Long userId) {
+        return ResponseEntity.ok(userService.disableUser(userId));
     }
 
     @GetMapping("admin-listing/{listingId}")
@@ -131,4 +149,10 @@ public class AdminGateway {
     public ResponseEntity<List<Task>> adminViewAllTasks() {
         return ResponseEntity.ok(taskController.adminViewAllTasks());
     }
+
+//    @PostMapping("script")
+//    @Operation(summary = "To run script")
+//    public void script() {
+//        sqlScriptExecutor.executeScript("script/test_script.sql");
+//    }
 }

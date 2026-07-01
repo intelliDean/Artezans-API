@@ -209,7 +209,7 @@ export const CustomerDashboard = () => {
     if (!task) return [];
     const seed = task.id || 1;
     const taskDateStr = task.taskDates?.[0] || new Date().toISOString().split('T')[0];
-    return [
+    const defaultBids = [
       {
         id: 101 * seed,
         providerName: 'Alex Carpenter',
@@ -233,6 +233,12 @@ export const CustomerDashboard = () => {
         taskDate: taskDateStr
       }
     ];
+
+    // Read custom bids submitted from BrowseTasks page
+    const customBids = JSON.parse(localStorage.getItem('provider_bids') || '[]');
+    const matchingCustomBids = customBids.filter(b => b.taskId === task.id);
+
+    return [...matchingCustomBids, ...defaultBids];
   };
 
   const getStageBadgeStyle = (stage) => {

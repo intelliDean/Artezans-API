@@ -6,6 +6,7 @@ import { CustomerDashboard } from './pages/CustomerDashboard';
 import { ProviderWorkspace } from './pages/ProviderWorkspace';
 import { BrowseListings } from './pages/BrowseListings';
 import { AdminDashboard } from './pages/AdminDashboard';
+import { BrowseTasks } from './pages/BrowseTasks';
 import './App.css';
 
 function AppRoutes() {
@@ -22,12 +23,7 @@ function AppRoutes() {
         
         {/* Listings & Tasks Routes */}
         <Route path="/listings" element={<BrowseListings />} />
-        <Route path="/tasks" element={
-          <div className="container" style={{ padding: '3rem 1.5rem' }}>
-            <h2>Custom Tasks Board</h2>
-            <p style={{ color: 'var(--text-secondary)' }}>Full task board search is coming in the next step!</p>
-          </div>
-        } />
+        <Route path="/tasks" element={<BrowseTasks />} />
       </Route>
       
       {/* 404 Route */}

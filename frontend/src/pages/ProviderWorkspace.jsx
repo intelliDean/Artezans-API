@@ -33,6 +33,39 @@ export const ProviderWorkspace = () => {
   const [listingError, setListingError] = useState('');
   const [isSubmittingListing, setIsSubmittingListing] = useState(false);
 
+  const getMyReviewsInfo = () => {
+    const email = user?.emailAddress || 'chiamaka@gmail.com';
+    const seededReviews = [
+      {
+        id: 1,
+        customerName: 'Glory Adesina',
+        rating: 5,
+        comment: 'Absolutely fantastic work! Punctual, polite, and very thorough.',
+        date: 'June 18, 2026'
+      },
+      {
+        id: 2,
+        customerName: 'Marcus Aurelius',
+        rating: 4,
+        comment: 'Great clean service. Took a little longer than expected but excellent result.',
+        date: 'May 12, 2026'
+      }
+    ];
+
+    const customReviews = JSON.parse(localStorage.getItem('provider_reviews') || '[]');
+    const matchingCustom = customReviews.filter(r => r.providerEmail === email);
+
+    const allReviews = [...matchingCustom, ...seededReviews];
+    const totalRating = allReviews.reduce((sum, r) => sum + r.rating, 0);
+    const avgRating = allReviews.length > 0 ? (totalRating / allReviews.length).toFixed(1) : '5.0';
+
+    return {
+      reviews: allReviews,
+      avgRating,
+      count: allReviews.length
+    };
+  };
+
   // Auth & Role Guard
   useEffect(() => {
     if (!isLoading) {
@@ -275,6 +308,21 @@ export const ProviderWorkspace = () => {
           }}
         >
           🛍️ My listings
+        </button>
+        <button
+          onClick={() => { setActiveTab('reviews'); setSelectedTaskForBid(null); }}
+          style={{
+            padding: '0.75rem 1.25rem',
+            background: 'none',
+            border: 'none',
+            borderBottom: activeTab === 'reviews' ? '3px solid var(--accent)' : '3px solid transparent',
+            color: activeTab === 'reviews' ? 'var(--text-primary)' : 'var(--text-secondary)',
+            fontWeight: '700',
+            cursor: 'pointer',
+            fontSize: '0.95rem'
+          }}
+        >
+          ⭐ Client Reviews
         </button>
         <button
           onClick={() => { logout(); navigate('/'); }}
@@ -834,6 +882,102 @@ export const ProviderWorkspace = () => {
           </div>
         </div>
       )}
+
+        {/* TAB 4: REVIEWS */}
+        {activeTab === 'reviews' && (
+          (() => {
+            const info = getMyReviewsInfo();
+            return (
+              <div>
+                <div style={{ marginBottom: '1.5rem' }}>
+                  <h3 style={{ fontSize: '1.15rem', fontWeight: '700', margin: '0 0 0.25rem 0' }}>Client Reviews & Ratings</h3>
+                  <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Review feedback left by customers on completed projects.</p>
+                </div>
+
+                <div style={{ display: 'flex', gap: '2rem', flexWrap: 'wrap', marginBottom: '2rem' }}>
+                  {/* Rating stats card */}
+                  <div style={{
+                    backgroundColor: 'var(--bg-secondary)',
+                    border: '1px solid var(--border)',
+                    borderRadius: 'var(--radius-md)',
+                    padding: '1.5rem',
+                    textAlign: 'center',
+                    flex: '1 1 200px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'center',
+                    alignItems: 'center'
+                  }}>
+                    <span style={{ fontSize: '2.5rem', color: '#ffcc00' }}>★</span>
+                    <strong style={{ fontSize: '2.5rem', display: 'block', margin: '0.5rem 0' }}>{info.avgRating}</strong>
+                    <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+                      Average based on {info.count} rating{info.count !== 1 ? 's' : ''}
+                    </span>
+                  </div>
+
+                  {/* Score distribution card */}
+                  <div style={{
+                    backgroundColor: 'var(--bg-secondary)',
+                    border: '1px solid var(--border)',
+                    borderRadius: 'var(--radius-md)',
+                    padding: '1.5rem',
+                    flex: '2 1 300px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '0.5rem'
+                  }}>
+                    <h4 style={{ fontSize: '0.9rem', fontWeight: '700', margin: '0 0 0.5rem 0' }}>Score Distribution</h4>
+                    {[5, 4, 3, 2, 1].map((stars) => {
+                      const starCount = info.reviews.filter(r => r.rating === stars).length;
+                      const percentage = info.count > 0 ? (starCount / info.count) * 100 : 0;
+                      return (
+                        <div key={stars} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8rem' }}>
+                          <span style={{ minWidth: '50px' }}>{stars} Stars</span>
+                          <div style={{ flex: 1, height: '8px', backgroundColor: 'var(--border)', borderRadius: '4px', overflow: 'hidden' }}>
+                            <div style={{ width: `${percentage}%`, height: '100%', backgroundColor: '#ffcc00' }}></div>
+                          </div>
+                          <span style={{ minWidth: '30px', textAlign: 'right' }}>{starCount}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Reviews Feed List */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                  {info.reviews.map((r, idx) => (
+                    <div key={r.id || idx} style={{
+                      backgroundColor: 'var(--bg-secondary)',
+                      border: '1px solid var(--border)',
+                      borderRadius: 'var(--radius-md)',
+                      padding: '1.25rem',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '0.5rem'
+                    }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div>
+                          <strong style={{ fontSize: '0.9rem', color: 'var(--text-primary)' }}>{r.customerName}</strong>
+                          <span style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', display: 'block' }}>
+                            Booking reference: #{r.bookingId || 'Direct Listing'}
+                          </span>
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
+                          <span style={{ color: '#ffcc00', fontSize: '1rem' }}>{'★'.repeat(r.rating)}{'☆'.repeat(5 - r.rating)}</span>
+                          <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>{r.date}</span>
+                        </div>
+                      </div>
+                      <hr style={{ border: 'none', borderTop: '1px solid var(--border)', margin: '0.25rem 0' }} />
+                      <p style={{ margin: 0, fontSize: '0.82rem', color: 'var(--text-secondary)', lineHeight: '1.4' }}>
+                        {r.comment}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          })()
+        )}
 
     </div>
   );

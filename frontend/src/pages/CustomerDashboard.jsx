@@ -42,6 +42,45 @@ export const CustomerDashboard = () => {
   }, [user]);
 
   // Auth Guard
+  // Review states
+  const [reviewBooking, setReviewBooking] = useState(null);
+  const [reviewRating, setReviewRating] = useState(5);
+  const [reviewText, setReviewText] = useState('');
+
+  const getReviewForBooking = (bookingId) => {
+    const existingReviews = JSON.parse(localStorage.getItem('provider_reviews') || '[]');
+    return existingReviews.find((r) => r.bookingId === bookingId);
+  };
+
+  const handleReviewSubmit = (e) => {
+    e.preventDefault();
+    if (!reviewBooking) return;
+
+    const existingReviews = JSON.parse(localStorage.getItem('provider_reviews') || '[]');
+    
+    const newReview = {
+      id: Date.now(),
+      bookingId: reviewBooking.id,
+      providerEmail: reviewBooking.listing?.serviceProvider?.user?.emailAddress || 'chiamaka@gmail.com',
+      providerName: reviewBooking.listing?.serviceProvider?.businessName || 'Chiamaka (G-Force)',
+      customerName: `${user.firstName} ${user.lastName}`,
+      rating: Number(reviewRating),
+      comment: reviewText,
+      date: new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
+    };
+
+    localStorage.setItem('provider_reviews', JSON.stringify([...existingReviews, newReview]));
+    
+    alert('Thank you! Your review has been submitted.');
+    setReviewBooking(null);
+    setReviewRating(5);
+    setReviewText('');
+    
+    // Invalidate queries to refresh view
+    queryClient.invalidateQueries({ queryKey: ['my-bookings'] });
+  };
+
+  // Auth Guard
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
       navigate('/');
@@ -642,6 +681,40 @@ export const CustomerDashboard = () => {
                               ✓ Finalize Job
                             </button>
                           )}
+
+                          {booking.bookingStage === 'COMPLETED' && (
+                            (() => {
+                              const rev = getReviewForBooking(booking.id);
+                              return rev ? (
+                                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.2rem' }}>
+                                  <span style={{ fontSize: '0.72rem', color: 'var(--text-secondary)' }}>Reviewed</span>
+                                  <strong style={{ color: '#ffcc00', fontSize: '0.95rem' }}>
+                                    {'★'.repeat(rev.rating)}{'☆'.repeat(5 - rev.rating)}
+                                  </strong>
+                                </div>
+                              ) : (
+                                <button
+                                  onClick={() => {
+                                    setReviewBooking(booking);
+                                    setReviewRating(5);
+                                    setReviewText('');
+                                  }}
+                                  style={{
+                                    padding: '0.5rem 1.25rem',
+                                    fontSize: '0.8rem',
+                                    backgroundColor: 'transparent',
+                                    color: 'var(--accent)',
+                                    border: '1px solid var(--accent)',
+                                    borderRadius: 'var(--radius-sm)',
+                                    cursor: 'pointer',
+                                    fontWeight: '700'
+                                  }}
+                                >
+                                  ⭐ Leave Review
+                                </button>
+                              );
+                            })()
+                          )}
                         </div>
                       </div>
                     ))}
@@ -869,6 +942,84 @@ export const CustomerDashboard = () => {
                 </div>
               </div>
             ))}
+          </div>
+        </div>
+      )}
+
+      {/* Review Modal */}
+      {reviewBooking && (
+        <div style={{
+          position: 'fixed',
+          top: 0, left: 0, right: 0, bottom: 0,
+          backgroundColor: 'rgba(0,0,0,0.6)',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          zIndex: 300,
+          padding: '1rem'
+        }}>
+          <div style={{
+            backgroundColor: 'var(--bg-secondary)',
+            border: '1px solid var(--border)',
+            borderRadius: 'var(--radius-lg)',
+            width: '100%',
+            maxWidth: '500px',
+            padding: '1.75rem',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '1.25rem'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h3 style={{ fontSize: '1.15rem', fontWeight: '800', margin: 0 }}>Rate & Review Provider</h3>
+              <button
+                onClick={() => setReviewBooking(null)}
+                style={{ background: 'none', border: 'none', fontSize: '1.5rem', cursor: 'pointer', color: 'var(--text-secondary)' }}
+              >
+                &times;
+              </button>
+            </div>
+
+            <form onSubmit={handleReviewSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+              <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', margin: 0 }}>
+                Please rate your experience with <strong>{reviewBooking.listing?.serviceProvider?.businessName || 'your provider'}</strong> for Booking #{reviewBooking.id}.
+              </p>
+
+              <div className="form-group" style={{ margin: 0 }}>
+                <label className="form-label" style={{ marginBottom: '0.5rem', display: 'block' }}>Rating</label>
+                <div style={{ display: 'flex', gap: '0.5rem', fontSize: '1.75rem' }}>
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <span
+                      key={star}
+                      onClick={() => setReviewRating(star)}
+                      style={{
+                        cursor: 'pointer',
+                        color: star <= reviewRating ? '#ffcc00' : 'var(--border)',
+                        transition: 'color 0.1s ease'
+                      }}
+                    >
+                      ★
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              <div className="form-group" style={{ margin: 0 }}>
+                <label className="form-label" htmlFor="review-desc">Feedback Comments</label>
+                <textarea
+                  id="review-desc"
+                  className="form-control"
+                  required
+                  rows={4}
+                  placeholder="Share details of your experience (e.g. quality of work, punctuality, communication)..."
+                  value={reviewText}
+                  onChange={(e) => setReviewText(e.target.value)}
+                />
+              </div>
+
+              <button type="submit" className="submit-btn" style={{ padding: '0.6rem' }}>
+                Submit Review
+              </button>
+            </form>
           </div>
         </div>
       )}

@@ -19,6 +19,39 @@ export const BrowseListings = () => {
   const { user, isAuthenticated, openLoginModal } = useAuth();
   const queryClient = useQueryClient();
 
+  const getProviderReviewsInfo = (providerEmail) => {
+    const email = providerEmail || 'chiamaka@gmail.com';
+    const seededReviews = [
+      {
+        id: 1,
+        customerName: 'Glory Adesina',
+        rating: 5,
+        comment: 'Absolutely fantastic work! Punctual, polite, and very thorough.',
+        date: 'June 18, 2026'
+      },
+      {
+        id: 2,
+        customerName: 'Marcus Aurelius',
+        rating: 4,
+        comment: 'Great clean service. Took a little longer than expected but excellent result.',
+        date: 'May 12, 2026'
+      }
+    ];
+
+    const customReviews = JSON.parse(localStorage.getItem('provider_reviews') || '[]');
+    const matchingCustom = customReviews.filter(r => r.providerEmail === email);
+
+    const allReviews = [...matchingCustom, ...seededReviews];
+    const totalRating = allReviews.reduce((sum, r) => sum + r.rating, 0);
+    const avgRating = allReviews.length > 0 ? (totalRating / allReviews.length).toFixed(1) : '5.0';
+
+    return {
+      reviews: allReviews,
+      avgRating,
+      count: allReviews.length
+    };
+  };
+
   // Filter/Search state
   const [activeCategory, setActiveCategory] = useState('');
   const [searchKeyword, setSearchKeyword] = useState('');
@@ -379,6 +412,15 @@ export const BrowseListings = () => {
                 <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', margin: 0 }}>
                   🏢 {listing.businessName}
                 </p>
+                {(() => {
+                  const info = getProviderReviewsInfo(listing.serviceProvider?.user?.emailAddress);
+                  return (
+                    <div style={{ fontSize: '0.75rem', color: '#ffcc00', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                      <span>★ {info.avgRating}</span>
+                      <span style={{ color: 'var(--text-secondary)' }}>({info.count} review{info.count !== 1 ? 's' : ''})</span>
+                    </div>
+                  );
+                })()}
                 <p style={{
                   fontSize: '0.8rem',
                   color: 'var(--text-secondary)',
@@ -518,10 +560,48 @@ export const BrowseListings = () => {
                       ${selectedListing.pricing?.toFixed ? selectedListing.pricing.toFixed(2) : selectedListing.pricing}/hr
                     </strong>
                   </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span style={{ color: 'var(--text-secondary)' }}>Rating:</span>
+                    {(() => {
+                      const info = getProviderReviewsInfo(selectedListing.serviceProvider?.user?.emailAddress);
+                      return (
+                        <strong style={{ color: '#ffcc00' }}>
+                          ★ {info.avgRating} ({info.count} review{info.count !== 1 ? 's' : ''})
+                        </strong>
+                      );
+                    })()}
+                  </div>
                   <hr style={{ border: 'none', borderTop: '1px solid var(--border)' }} />
                   <p style={{ margin: 0, color: 'var(--text-secondary)', lineHeight: '1.5' }}>
                     {selectedListing.serviceDescription || 'Professional, reliable, and fully insured service provider. Available at flexible hours to meet your scheduling needs.'}
                   </p>
+
+                  {(() => {
+                    const info = getProviderReviewsInfo(selectedListing.serviceProvider?.user?.emailAddress);
+                    return (
+                      <div style={{ marginTop: '1.5rem' }}>
+                        <h4 style={{ fontSize: '0.9rem', fontWeight: '800', marginBottom: '0.75rem', borderBottom: '1px solid var(--border)', paddingBottom: '0.35rem' }}>
+                          ⭐ Client Reviews ({info.count})
+                        </h4>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', maxHeight: '200px', overflowY: 'auto' }}>
+                          {info.reviews.map((r, idx) => (
+                            <div key={r.id || idx} style={{ backgroundColor: 'var(--bg-primary)', padding: '0.75rem', borderRadius: '4px', border: '1px solid var(--border)' }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.25rem', fontSize: '0.75rem' }}>
+                                <strong style={{ color: 'var(--text-primary)' }}>{r.customerName}</strong>
+                                <span style={{ color: '#ffcc00' }}>{'★'.repeat(r.rating)}{'☆'.repeat(5 - r.rating)}</span>
+                              </div>
+                              <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--text-secondary)', lineHeight: '1.4' }}>
+                                {r.comment}
+                              </p>
+                              <span style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', display: 'block', marginTop: '0.25rem', textAlign: 'right' }}>
+                                {r.date}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })()}
                 </div>
               </div>
 

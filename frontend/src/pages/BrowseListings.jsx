@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import axios from 'axios';
 import api from '../services/api';
@@ -61,14 +61,39 @@ export const BrowseListings = () => {
   const [isBookingLoading, setIsBookingLoading] = useState(false);
   const [bookingError, setBookingError] = useState('');
 
-  // Query: Fetch all active listings (page 1)
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [allListings, setAllListings] = useState([]);
+  const [hasMore, setHasMore] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+
+  // Query: Fetch all active listings (paginated)
   const { data: allListingsPage, isLoading: isAllLoading } = useQuery({
-    queryKey: ['all-listings'],
+    queryKey: ['all-listings', currentPage],
     queryFn: async () => {
-      const res = await api.get('/listing/undeleted/1');
+      const res = await api.get(`/listing/undeleted/${currentPage}`);
       return res.data;
     },
+    keepPreviousData: true,
   });
+
+  // Accumulate pages into allListings
+  useEffect(() => {
+    if (allListingsPage) {
+      const newItems = Array.isArray(allListingsPage) ? allListingsPage : (allListingsPage.data || []);
+      if (currentPage === 1) {
+        setAllListings(newItems);
+      } else {
+        setAllListings(prev => {
+          const existingIds = new Set(prev.map(l => l.id));
+          return [...prev, ...newItems.filter(l => !existingIds.has(l.id))];
+        });
+      }
+      // If fewer than 10 returned, no more pages
+      if (newItems.length < 10) setHasMore(false);
+      setIsLoadingMore(false);
+    }
+  }, [allListingsPage, currentPage]);
 
   // Query: Search by keyword (service name)
   const { data: keywordResults, isLoading: isKeywordLoading, refetch: refetchKeyword } = useQuery({
@@ -122,8 +147,8 @@ export const BrowseListings = () => {
     displayListings = keywordResults || [];
     isLoading = isKeywordLoading;
   } else {
-    displayListings = allListingsPage?.content || [];
-    isLoading = isAllLoading;
+    displayListings = allListings;
+    isLoading = isAllLoading && currentPage === 1;
   }
 
   // Apply client-side category filter
@@ -450,6 +475,38 @@ export const BrowseListings = () => {
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Load More Button — only in 'all' browse mode */}
+      {searchMode === 'all' && allListings.length > 0 && (
+        <div style={{ textAlign: 'center', padding: '2rem 0' }}>
+          {hasMore ? (
+            <button
+              onClick={() => { setIsLoadingMore(true); setCurrentPage(p => p + 1); }}
+              disabled={isLoadingMore || isAllLoading}
+              style={{
+                padding: '0.75rem 2.5rem',
+                background: 'var(--bg-secondary)',
+                border: '2px solid var(--accent)',
+                color: 'var(--accent)',
+                borderRadius: 'var(--radius-sm)',
+                fontWeight: '700',
+                fontSize: '0.9rem',
+                cursor: isLoadingMore ? 'not-allowed' : 'pointer',
+                transition: 'all 0.2s',
+                opacity: isLoadingMore ? 0.7 : 1,
+              }}
+              onMouseEnter={e => { if (!isLoadingMore) { e.currentTarget.style.background = 'var(--accent)'; e.currentTarget.style.color = 'white'; }}}
+              onMouseLeave={e => { e.currentTarget.style.background = 'var(--bg-secondary)'; e.currentTarget.style.color = 'var(--accent)'; }}
+            >
+              {isLoadingMore ? '⏳ Loading...' : 'Load More Listings'}
+            </button>
+          ) : (
+            <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
+              ✅ You've seen all {allListings.length} listings
+            </p>
+          )}
         </div>
       )}
 

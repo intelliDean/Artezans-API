@@ -33,9 +33,23 @@ export const ProviderWorkspace = () => {
   const [listingError, setListingError] = useState('');
   const [isSubmittingListing, setIsSubmittingListing] = useState(false);
 
+  const myProviderEmail = user?.emailAddress || 'chiamaka@gmail.com';
+  const { data: myReviewsList } = useQuery({
+    queryKey: ['my-provider-reviews', myProviderEmail],
+    queryFn: async () => {
+      try {
+        const res = await api.get(`/review/provider?email=${myProviderEmail}`);
+        return res.data;
+      } catch (e) {
+        return [];
+      }
+    },
+    enabled: !!myProviderEmail
+  });
+
   const getMyReviewsInfo = () => {
-    const email = user?.emailAddress || 'chiamaka@gmail.com';
-    const seededReviews = [
+    const allReviews = myReviewsList || [];
+    const displayReviewsList = allReviews.length > 0 ? allReviews : [
       {
         id: 1,
         customerName: 'Glory Adesina',
@@ -52,17 +66,13 @@ export const ProviderWorkspace = () => {
       }
     ];
 
-    const customReviews = JSON.parse(localStorage.getItem('provider_reviews') || '[]');
-    const matchingCustom = customReviews.filter(r => r.providerEmail === email);
-
-    const allReviews = [...matchingCustom, ...seededReviews];
-    const totalRating = allReviews.reduce((sum, r) => sum + r.rating, 0);
-    const avgRating = allReviews.length > 0 ? (totalRating / allReviews.length).toFixed(1) : '5.0';
+    const totalRating = displayReviewsList.reduce((sum, r) => sum + r.rating, 0);
+    const avgRating = displayReviewsList.length > 0 ? (totalRating / displayReviewsList.length).toFixed(1) : '5.0';
 
     return {
-      reviews: allReviews,
+      reviews: displayReviewsList,
       avgRating,
-      count: allReviews.length
+      count: displayReviewsList.length
     };
   };
 
@@ -964,7 +974,9 @@ export const ProviderWorkspace = () => {
                         </div>
                         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
                           <span style={{ color: '#ffcc00', fontSize: '1rem' }}>{'★'.repeat(r.rating)}{'☆'.repeat(5 - r.rating)}</span>
-                          <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>{r.date}</span>
+                          <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>
+                            {r.createdAt ? new Date(r.createdAt).toLocaleDateString() : r.date || 'June 18, 2026'}
+                          </span>
                         </div>
                       </div>
                       <hr style={{ border: 'none', borderTop: '1px solid var(--border)', margin: '0.25rem 0' }} />

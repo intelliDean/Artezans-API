@@ -6,6 +6,52 @@ import axios from 'axios';
 import api from '../services/api';
 import { CheckoutForm } from '../components/payment/CheckoutForm';
 
+const BookingReviewAction = ({ booking, onReviewClick }) => {
+  const { data: review, isLoading } = useQuery({
+    queryKey: ['booking-review', booking.id],
+    queryFn: async () => {
+      try {
+        const res = await api.get(`/review/booking/${booking.id}`);
+        return res.data || null;
+      } catch (e) {
+        return null;
+      }
+    },
+    enabled: booking.bookingStage === 'COMPLETED'
+  });
+
+  if (isLoading) return <span style={{ fontSize: '0.72rem', color: 'var(--text-secondary)' }}>Loading...</span>;
+
+  if (review) {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.2rem' }}>
+        <span style={{ fontSize: '0.72rem', color: 'var(--text-secondary)' }}>Reviewed</span>
+        <strong style={{ color: '#ffcc00', fontSize: '0.95rem' }}>
+          {'★'.repeat(review.rating)}{'☆'.repeat(5 - review.rating)}
+        </strong>
+      </div>
+    );
+  }
+
+  return (
+    <button
+      onClick={() => onReviewClick(booking)}
+      style={{
+        padding: '0.5rem 1.25rem',
+        fontSize: '0.8rem',
+        backgroundColor: 'transparent',
+        color: 'var(--accent)',
+        border: '1px solid var(--accent)',
+        borderRadius: 'var(--radius-sm)',
+        cursor: 'pointer',
+        fontWeight: '700'
+      }}
+    >
+      ⭐ Leave Review
+    </button>
+  );
+};
+
 export const CustomerDashboard = () => {
   const { user, isAuthenticated, isLoading, openLoginModal, logout } = useAuth();
   const navigate = useNavigate();
@@ -47,37 +93,31 @@ export const CustomerDashboard = () => {
   const [reviewRating, setReviewRating] = useState(5);
   const [reviewText, setReviewText] = useState('');
 
-  const getReviewForBooking = (bookingId) => {
-    const existingReviews = JSON.parse(localStorage.getItem('provider_reviews') || '[]');
-    return existingReviews.find((r) => r.bookingId === bookingId);
-  };
-
-  const handleReviewSubmit = (e) => {
+  const handleReviewSubmit = async (e) => {
     e.preventDefault();
     if (!reviewBooking) return;
 
-    const existingReviews = JSON.parse(localStorage.getItem('provider_reviews') || '[]');
-    
-    const newReview = {
-      id: Date.now(),
-      bookingId: reviewBooking.id,
-      providerEmail: reviewBooking.listing?.serviceProvider?.user?.emailAddress || 'chiamaka@gmail.com',
-      providerName: reviewBooking.listing?.serviceProvider?.businessName || 'Chiamaka (G-Force)',
-      customerName: `${user.firstName} ${user.lastName}`,
-      rating: Number(reviewRating),
-      comment: reviewText,
-      date: new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
-    };
-
-    localStorage.setItem('provider_reviews', JSON.stringify([...existingReviews, newReview]));
-    
-    alert('Thank you! Your review has been submitted.');
-    setReviewBooking(null);
-    setReviewRating(5);
-    setReviewText('');
-    
-    // Invalidate queries to refresh view
-    queryClient.invalidateQueries({ queryKey: ['my-bookings'] });
+    try {
+      const providerEmail = reviewBooking.listing?.serviceProvider?.user?.emailAddress || 'chiamaka@gmail.com';
+      await api.post('/review/submit', {
+        bookingId: reviewBooking.id,
+        providerEmail: providerEmail,
+        rating: Number(reviewRating),
+        comment: reviewText
+      });
+      
+      alert('Thank you! Your review has been submitted.');
+      const completedBookingId = reviewBooking.id;
+      setReviewBooking(null);
+      setReviewRating(5);
+      setReviewText('');
+      
+      // Invalidate queries to refresh view
+      queryClient.invalidateQueries({ queryKey: ['my-bookings'] });
+      queryClient.invalidateQueries({ queryKey: ['booking-review', completedBookingId] });
+    } catch (err) {
+      alert(`Submit failed: ${err.response?.data?.message || err.message}`);
+    }
   };
 
   // Auth Guard
@@ -683,38 +723,15 @@ export const CustomerDashboard = () => {
                           )}
 
                           {booking.bookingStage === 'COMPLETED' && (
-                            (() => {
-                              const rev = getReviewForBooking(booking.id);
-                              return rev ? (
-                                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.2rem' }}>
-                                  <span style={{ fontSize: '0.72rem', color: 'var(--text-secondary)' }}>Reviewed</span>
-                                  <strong style={{ color: '#ffcc00', fontSize: '0.95rem' }}>
-                                    {'★'.repeat(rev.rating)}{'☆'.repeat(5 - rev.rating)}
-                                  </strong>
-                                </div>
-                              ) : (
-                                <button
-                                  onClick={() => {
-                                    setReviewBooking(booking);
-                                    setReviewRating(5);
-                                    setReviewText('');
-                                  }}
-                                  style={{
-                                    padding: '0.5rem 1.25rem',
-                                    fontSize: '0.8rem',
-                                    backgroundColor: 'transparent',
-                                    color: 'var(--accent)',
-                                    border: '1px solid var(--accent)',
-                                    borderRadius: 'var(--radius-sm)',
-                                    cursor: 'pointer',
-                                    fontWeight: '700'
-                                  }}
-                                >
-                                  ⭐ Leave Review
-                                </button>
-                              );
-                            })()
-                          )}
+                             <BookingReviewAction
+                               booking={booking}
+                               onReviewClick={(b) => {
+                                 setReviewBooking(b);
+                                 setReviewRating(5);
+                                 setReviewText('');
+                               }}
+                             />
+                           )}
                         </div>
                       </div>
                     ))}

@@ -10,5 +10,7 @@ public enum BookingStage {
 
     ACCEPTED,
 
-    PAID
+    PAID,
+
+    COMPLETED
 }

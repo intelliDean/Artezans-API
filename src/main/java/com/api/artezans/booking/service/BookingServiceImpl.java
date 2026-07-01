@@ -180,6 +180,7 @@ public class BookingServiceImpl implements BookingService {
             throw new ArtezanException("Task is either not an open booking or has not been paid for");
         }
         booking.setBookState(COMPLETED);
+        booking.setBookingStage(BookingStage.COMPLETED);
         booking.setUpdatedAt(LocalDateTime.now());
         notifyCustomerOfCompletion(booking);
         bookingRepository.save(booking);
@@ -294,6 +295,7 @@ public class BookingServiceImpl implements BookingService {
         // Accept (or re-accept after a prior REJECTED agreement)
         applyAgreement(booking, AgreementStatus.ACCEPTED, "Service is accepted");
         booking.setBookState(COMPLETED);
+        booking.setBookingStage(BookingStage.COMPLETED);
         bookingRepository.save(booking);
         sendMailToServiceProvider(booking, "accept_service", " Service Accepted");
         log.info("Booking [id={}] accepted by customer [email={}]", bookingId, currentUser.getUsername());

@@ -83,22 +83,13 @@ oauth2:
   redirect:
     uri: ${OAUTH2_REDIRECT_URI}
 
-# ── Swagger / OpenAPI ─────────────────────────────────────────────────────────
+# ── Swagger / OpenAPI (DISABLED in production for security) ──────────────────
 springdoc:
   api-docs:
-    enabled: true
-    path: /v3/api-docs
+    enabled: false
   swagger-ui:
-    path: /swagger-ui.html
-    filter: true
-    tags-sorter: alpha
-    operations-sorter: alpha
-    doc-expansion: none
-    deep-linking: true
-    display-request-duration: true
-    default-models-expand-depth: 1
-    default-model-rendering: example
-    show-extensions: true
-    display-operation-id: false
-    persist-authorization: true
-    try-it-out-enabled: true
+    enabled: false
+
+# ── CORS ──────────────────────────────────────────────────────────────────────
+cors:
+  allowed-origins: ${CORS_ALLOWED_ORIGINS:https://artezans.com}

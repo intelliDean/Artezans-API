@@ -24,6 +24,74 @@
 
 ---
 
+## ⚡ Quick Start
+
+### Backend (Spring Boot)
+```bash
+# Copy and fill in required env vars
+cp .env.example .env
+
+# Run with Maven wrapper (Flyway migrations apply automatically)
+./mvnw spring-boot:run
+
+# API available at:  http://localhost:8080
+# Swagger UI at:     http://localhost:8080/swagger-ui/index.html
+```
+
+### Frontend (React + Vite)
+```bash
+cd frontend
+
+# Install dependencies
+npm install
+
+# Copy and fill in frontend env vars
+cp .env.example .env
+
+# Start the dev server (auto-proxies /api to localhost:8080)
+npm run dev
+
+# App available at: http://localhost:5173
+```
+
+---
+
+## ✅ Implemented Features (Steps 1–9)
+
+| Step | Feature | Status |
+|------|---------|--------|
+| 1 | Base setup, design system, JWT auth flow | ✅ Done |
+| 2 | Homepage, live task feed (TanStack Query polling) | ✅ Done |
+| 3 | Task posting modal, Customer Dashboard, bids drawer | ✅ Done |
+| 4 | Bookings lifecycle, Stripe checkout, PayPal sandbox | ✅ Done |
+| 5 | Provider Workspace (tasks, bookings, listings CRUD) | ✅ Done |
+| 6 | Service listings directory with search & direct booking | ✅ Done |
+| 7 | Admin Dashboard (user management, category tools) | ✅ Done |
+| 8 | Task bids feed, provider bid submission, bid sync | ✅ Done |
+| 9 | Customer reviews & ratings — database-backed with REST API | ✅ Done |
+
+---
+
+## 📋 Review API Reference
+
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| `POST` | `/api/v1/review/submit` | `CUSTOMER` | Submit a star rating and comment for a completed booking |
+| `GET` | `/api/v1/review/provider?email={email}` | Public | Fetch all reviews for a given provider email |
+| `GET` | `/api/v1/review/booking/{bookingId}` | Public | Retrieve the review submitted for a specific booking |
+
+### Review Request Body
+```json
+{
+  "bookingId": 42,
+  "providerEmail": "chiamaka@gmail.com",
+  "rating": 5,
+  "comment": "Exceptional work, very professional!"
+}
+```
+
+---
+
 ## 1. Project Overview
 
 Artezans is a **RESTful artezanService-marketplace backend** that connects customers who need work done with artezanService providers who can perform that work. Think of it as a local-artezanServices platform (similar conceptually to Airtasker or TaskRabbit) tailored to the Australian market.

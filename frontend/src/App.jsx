@@ -28,10 +28,44 @@ function AppRoutes() {
       
       {/* 404 Route */}
       <Route path="*" element={
-        <div style={{ padding: '5rem 1.5rem', textAlign: 'center' }}>
-          <h2>Page Not Found</h2>
-          <p style={{ color: 'var(--text-secondary)', marginBottom: '1.5rem' }}>The page you are looking for does not exist.</p>
-          <a href="/" style={{ fontWeight: 'bold' }}>Back to Home</a>
+        <div style={{
+          minHeight: '70vh',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          textAlign: 'center',
+          padding: '4rem 1.5rem',
+          gap: '1rem'
+        }}>
+          <div style={{ fontSize: '5rem', lineHeight: 1 }}>🔍</div>
+          <h1 style={{ fontSize: '2rem', fontWeight: '800', margin: 0 }}>Page Not Found</h1>
+          <p style={{
+            color: 'var(--text-secondary)',
+            maxWidth: '420px',
+            lineHeight: '1.6',
+            margin: 0
+          }}>
+            Looks like this page took the day off. Let's get you back to finding great services.
+          </p>
+          <a
+            href="/"
+            style={{
+              marginTop: '0.5rem',
+              padding: '0.75rem 2rem',
+              backgroundColor: 'var(--accent)',
+              color: 'white',
+              borderRadius: 'var(--radius-sm)',
+              fontWeight: '700',
+              textDecoration: 'none',
+              fontSize: '0.95rem',
+              transition: 'opacity 0.2s',
+            }}
+            onMouseEnter={e => e.target.style.opacity = '0.85'}
+            onMouseLeave={e => e.target.style.opacity = '1'}
+          >
+            Back to Home
+          </a>
         </div>
       } />
     </Routes>

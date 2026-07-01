@@ -477,3 +477,83 @@ dialog[open]::backdrop {
     transform: translateY(0) scale(1);
   }
 }
+
+/* ===== RESPONSIVE BREAKPOINTS ===== */
+
+/* Tablet: 768px and below */
+@media (max-width: 768px) {
+  .container {
+    padding: 0 1rem;
+  }
+
+  /* Header nav links collapse on tablet */
+  .header-nav {
+    gap: 0.5rem;
+  }
+  .header-nav a {
+    font-size: 0.8rem;
+    padding: 0.4rem 0.6rem;
+  }
+
+  /* Card grids become 2 columns */
+  .grid-auto {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+
+  /* Modal panels stack vertically */
+  .modal-content {
+    flex-direction: column !important;
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+
+  /* Dashboard tab buttons wrap */
+  .tab-bar {
+    flex-wrap: wrap;
+  }
+}
+
+/* Mobile: 480px and below */
+@media (max-width: 480px) {
+  /* Full-width single-column grids */
+  .grid-auto {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Hero text scales down */
+  h1 {
+    font-size: clamp(1.5rem, 6vw, 2.5rem) !important;
+  }
+  h2 {
+    font-size: clamp(1.1rem, 4vw, 1.8rem) !important;
+  }
+
+  /* Buttons become full-width on mobile */
+  .submit-btn {
+    width: 100%;
+  }
+
+  /* Modals go near-fullscreen */
+  .modal-overlay > div {
+    width: 96vw !important;
+    max-width: 96vw !important;
+    padding: 1.25rem !important;
+    border-radius: var(--radius-md) !important;
+  }
+
+  /* Reduce section padding */
+  section, .section {
+    padding: 2rem 1rem !important;
+  }
+
+  /* Tab bar scrolls horizontally instead of wrapping */
+  .tab-bar {
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .tab-bar::-webkit-scrollbar {
+    display: none;
+  }
+}

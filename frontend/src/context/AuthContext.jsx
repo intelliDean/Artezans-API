@@ -32,6 +32,33 @@ export const AuthProvider = ({ children }) => {
     registerLogoutCallback(logout);
 
     const restoreSession = async () => {
+      // Check for OAuth2 tokens in redirect URL parameters
+      const params = new URLSearchParams(window.location.search);
+      const urlToken = params.get('token');
+      const urlRefreshToken = params.get('refreshToken');
+
+      if (urlToken && urlRefreshToken) {
+        try {
+          setAccessToken(urlToken);
+          localStorage.setItem('artezans_refresh', urlRefreshToken);
+
+          // Retrieve user profile
+          const profileResponse = await api.get('/user/me');
+          setUser(profileResponse.data.data);
+          setIsAuthenticated(true);
+
+          // Clean parameters from address bar
+          const cleanUrl = window.location.pathname;
+          window.history.replaceState({}, document.title, cleanUrl);
+          setIsLoading(false);
+          return;
+        } catch (error) {
+          console.error('OAuth2 token restore failed:', error);
+          localStorage.removeItem('artezans_refresh');
+          setAccessToken(null);
+        }
+      }
+
       const refreshToken = localStorage.getItem('artezans_refresh');
       if (refreshToken) {
         try {
